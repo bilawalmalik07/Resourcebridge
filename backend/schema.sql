@@ -18,7 +18,17 @@ CREATE TABLE documents (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     file_name VARCHAR(255) NOT NULL,
     file_url TEXT NOT NULL, 
-    category VARCHAR(50) NOT NULL,
+    category VARCHAR(50) NOT NULL (
+        category IN (
+            'immigration', 
+            'school', 
+            'housing', 
+            'employment', 
+            'healthcare', 
+            'benefits', 
+            'emergency'
+        )
+    ),
     raw_ocr_text TEXT,
     uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
