@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -27,7 +28,7 @@ def test_database_connection(db: Session = Depends(get_db)):
         return {"database_status": "error", "details": str(e)}
 
 
-# 🚀 NEW: User Registration Route
+# User Registration Route
 @app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     # 1. Check if the email already exists in the database
@@ -54,3 +55,26 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
 
     return new_user
+
+
+#  User Login
+@app.post("/login", response_model=schemas.Token)
+def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """Verifies user credentials and returns a secure JWT access token."""
+    # 1. Look up the user by email
+    user = db.query(models.User).filter(
+        models.User.email == form_data.username).first()
+
+    # 2. If user doesn't exist OR password doesn't match, give a 401 Error
+    if not user or not security.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 3. Create the timed token containing their user email
+    access_token = security.create_access_token(data={"sub": user.email})
+
+    # 4. Return the token back to the client
+    return {"access_token": access_token, "token_type": "bearer"}
