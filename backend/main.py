@@ -78,3 +78,40 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
 
     # 4. Return the token back to the client
     return {"access_token": access_token, "token_type": "bearer"}
+
+# Secure Document Upload Route
+
+
+@app.post("/documents", response_model=schemas.DocumentResponse, status_code=status.HTTP_201_CREATED)
+def upload_document(
+    doc_in: schemas.DocumentCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    """Securely creates a new document record linked directly to the logged-in user."""
+    new_doc = models.Document(
+        title=doc_in.title,
+        file_url=doc_in.file_url,
+        category=doc_in.category,
+        ocr_text=None,        # Placedholders: Filled by OCR engine in Week 7
+        ai_summary=None,      # Placedholders: Filled by AI engine in Week 7
+        owner_id=current_user.id
+    )
+
+    db.add(new_doc)
+    db.commit()
+    db.refresh(new_doc)
+    return new_doc
+
+
+# Fetch User's Documents Route
+@app.get("/documents", response_model=list[schemas.DocumentResponse])
+def get_user_documents(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(
+        security.get_current_user)  # ◄ Secures this route!
+):
+    """Retrieves all documents belonging exclusively to the authenticated user."""
+    user_docs = db.query(models.Document).filter(
+        models.Document.owner_id == current_user.id).all()
+    return user_docs

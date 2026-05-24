@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
 
 
 class UserCreate(BaseModel):
@@ -25,3 +26,22 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: str | None = None
+
+
+class DocumentCreate(BaseModel):
+    title: str
+    file_url: str
+    category: str | None = None
+
+
+class DocumentResponse(BaseModel):
+    id: int
+    title: str
+    file_url: str
+    category: str | None = None
+    ocr_text: str | None = None
+    ai_summary: str | None = None
+    owner_id: int
+
+    class Config:
+        from_attributes = True
