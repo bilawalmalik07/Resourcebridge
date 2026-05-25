@@ -12,13 +12,14 @@ services:
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        # FIX: This was used in security.py but missing from render.yaml,
-        # so it would fall back to the 30-minute default silently in prod.
         value: "30"
       - key: GEMINI_API_KEY
-        sync: false # Paste your Google AI Studio key in the Render dashboard
+        sync: false
       - key: ALLOWED_ORIGINS
-        # FIX: Added to support production CORS. Set this to your deployed
-        # frontend URL (e.g. https://resourcebridge.vercel.app) in the Render dashboard.
-        # For multiple origins separate with commas: https://a.com,https://b.com
+        sync: false # Set to your Render frontend URL e.g. https://resourcebridge-frontend.onrender.com
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # From cloudinary.com dashboard
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
         sync: false
