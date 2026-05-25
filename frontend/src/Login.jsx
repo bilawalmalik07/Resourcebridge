@@ -13,13 +13,21 @@ export default function Login({ setToken }) {
     try {
       if (isSignUp) {
         await API.post('/register', { email, password });
-        setIsSignUp(false); // Switch back to login view after signing up successfully
+        setIsSignUp(false); 
+        alert('Account created successfully! Please sign in.');
       } else {
+        // OAuth2 login requires URLSearchParams (Form Data)
         const formData = new URLSearchParams();
-        formData.append('username', email);
+        formData.append('username', email); 
         formData.append('password', password);
         
-        const response = await API.post('/login', formData);
+        const response = await API.post('/login', formData, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+        
+        // Save the token and log in
         localStorage.setItem('token', response.data.access_token);
         setToken(response.data.access_token);
       }
