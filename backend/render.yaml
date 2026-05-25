@@ -6,10 +6,19 @@ services:
     startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
-        sync: false # You will paste your Neon Postgres string in the Render dashboard
+        sync: false
       - key: SECRET_KEY
-        sync: false # You will paste your secret JWT key in the Render dashboard
+        sync: false
       - key: ALGORITHM
         value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        # FIX: This was used in security.py but missing from render.yaml,
+        # so it would fall back to the 30-minute default silently in prod.
+        value: "30"
       - key: GEMINI_API_KEY
-        sync: false # You will paste your Google AI Studio key in the Render dashboard
+        sync: false # Paste your Google AI Studio key in the Render dashboard
+      - key: ALLOWED_ORIGINS
+        # FIX: Added to support production CORS. Set this to your deployed
+        # frontend URL (e.g. https://resourcebridge.vercel.app) in the Render dashboard.
+        # For multiple origins separate with commas: https://a.com,https://b.com
+        sync: false

@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
 
 
 class UserCreate(BaseModel):
@@ -42,6 +41,9 @@ class DocumentResponse(BaseModel):
     ocr_text: str | None = None
     ai_summary: str | None = None
     owner_id: int
+    # FIX: Added created_at to response schema to match the new model field
+    # Without this, the field would never be returned to the frontend
+    created_at: datetime
 
     class Config:
         from_attributes = True

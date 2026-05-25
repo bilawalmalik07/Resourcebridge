@@ -12,7 +12,6 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    # Connects users to their uploaded documents
     documents = relationship("Document", back_populates="owner")
 
 
@@ -25,6 +24,8 @@ class Document(Base):
     category = Column(String, index=True, nullable=True)
     ocr_text = Column(Text, nullable=True)
     ai_summary = Column(Text, nullable=True)
+    # FIX: Added missing created_at column — Dashboard.jsx was rendering doc.created_at
+    # which caused a crash because this field didn't exist in the original model
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     owner_id = Column(Integer, ForeignKey("users.id"))
-    # Connects documents back to the User object
     owner = relationship("User", back_populates="documents")
