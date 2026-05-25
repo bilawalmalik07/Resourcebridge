@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, DateTime, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -24,8 +24,11 @@ class Document(Base):
     category = Column(String, index=True, nullable=True)
     ocr_text = Column(Text, nullable=True)
     ai_summary = Column(Text, nullable=True)
-    # FIX: Added missing created_at column — Dashboard.jsx was rendering doc.created_at
-    # which caused a crash because this field didn't exist in the original model
+    ai_summary_es = Column(Text, nullable=True)       # Spanish summary
+    # List of action items/reminders
+    action_items = Column(JSON, nullable=True)
+    # Flag for emergency packet
+    is_emergency = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="documents")

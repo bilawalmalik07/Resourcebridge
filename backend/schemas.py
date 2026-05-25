@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Any
 
 
 class UserCreate(BaseModel):
@@ -31,6 +31,7 @@ class DocumentCreate(BaseModel):
     title: str
     file_url: str
     category: str | None = None
+    is_emergency: bool = False
 
 
 class DocumentResponse(BaseModel):
@@ -40,10 +41,16 @@ class DocumentResponse(BaseModel):
     category: str | None = None
     ocr_text: str | None = None
     ai_summary: str | None = None
+    ai_summary_es: str | None = None
+    action_items: Any | None = None
+    is_emergency: bool = False
     owner_id: int
-    # FIX: Added created_at to response schema to match the new model field
-    # Without this, the field would never be returned to the frontend
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UploadResponse(BaseModel):
+    file_url: str
+    original_filename: str

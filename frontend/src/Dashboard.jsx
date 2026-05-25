@@ -1,245 +1,519 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import API from './api';
-import { FileText, Search, Upload, LogOut, Globe, Sparkles } from 'lucide-react';
+import { useLanguage } from './LanguageContext';
+import {
+  FileText, Search, Upload, LogOut, Globe, Sparkles,
+  AlertTriangle, Trash2, ExternalLink, CheckCircle,
+  Clock, ChevronDown, X, Printer
+} from 'lucide-react';
 
-const CATEGORIES = [
-  'immigration', 'school', 'housing', 'employment',
-  'healthcare', 'benefits', 'emergency', 'Uncategorized'
-];
+const CATEGORIES = ['immigration', 'school', 'housing', 'employment', 'healthcare', 'benefits', 'emergency', 'Uncategorized'];
+
+const PRIORITY_STYLES = {
+  high: 'bg-red-50 text-red-700 border-red-200',
+  medium: 'bg-amber-50 text-amber-700 border-amber-200',
+  low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
 
 export default function Dashboard({ onLogout }) {
+  const { t, toggle, lang } = useLanguage();
   const [documents, setDocuments] = useState([]);
+  const [selectedDoc, setSelectedDoc] = useState(null);
   const [search, setSearch] = useState('');
-  const [fileUrl, setFileUrl] = useState('');
-  // FIX: Added title and category state — the original hardcoded title as
-  // "Uploaded Document" and never sent a category, which wasn't useful
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [emergencyOnly, setEmergencyOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState('documents'); // 'documents' | 'emergency'
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Uncategorized');
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
+  const [isEmergency, setIsEmergency] = useState(false);
+  const [showUploadPanel, setShowUploadPanel] = useState(false);
+  const [emergencyPacket, setEmergencyPacket] = useState(null);
+  const [loadingPacket, setLoadingPacket] = useState(false);
+  const fileInputRef = useRef();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  useEffect(() => { fetchDocuments(); }, [categoryFilter, emergencyOnly]);
 
   const fetchDocuments = async () => {
     try {
-      const res = await API.get('/documents');
+      const params = new URLSearchParams();
+      if (categoryFilter !== 'All') params.append('category', categoryFilter);
+      if (emergencyOnly) params.append('emergency_only', 'true');
+      const res = await API.get(`/documents?${params}`);
       setDocuments(res.data);
     } catch (err) {
       console.error('Error fetching documents:', err);
     }
   };
 
-  const handleUpload = async (e) => {
+  const handleFileUpload = async (e) => {
     e.preventDefault();
-    if (!fileUrl || !title) return;
+    const file = fileInputRef.current?.files?.[0];
+    if (!file || !title) return;
+
     setUploading(true);
-    setError('');
+    setUploadError('');
+
     try {
-      const res = await API.post('/documents', {
-        title,
-        file_url: fileUrl,
-        category,
+      // Step 1: Upload file to Cloudinary via backend
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await API.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setDocuments([res.data, ...documents]);
-      setFileUrl('');
+
+      // Step 2: Create document record with returned URL + trigger AI pipeline
+      const docRes = await API.post('/documents', {
+        title,
+        file_url: uploadRes.data.file_url,
+        category,
+        is_emergency: isEmergency,
+      });
+
+      setDocuments(prev => [docRes.data, ...prev]);
       setTitle('');
       setCategory('Uncategorized');
+      setIsEmergency(false);
+      setShowUploadPanel(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error processing document. Please try again.');
+      setUploadError(err.response?.data?.detail || t.uploadError);
     } finally {
       setUploading(false);
     }
   };
 
-  const filteredDocs = documents.filter(doc =>
-    doc.title?.toLowerCase().includes(search.toLowerCase()) ||
-    doc.ocr_text?.toLowerCase().includes(search.toLowerCase()) ||
-    doc.ai_summary?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // FIX: Safe date formatter — the original called new Date(doc.created_at).toLocaleDateString()
-  // directly, which crashes if created_at is undefined (it was missing from the model)
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'Unknown date';
-    return new Date(dateStr).toLocaleDateString();
+  const handleDelete = async (docId) => {
+    if (!window.confirm('Delete this document?')) return;
+    try {
+      await API.delete(`/documents/${docId}`);
+      setDocuments(prev => prev.filter(d => d.id !== docId));
+      if (selectedDoc?.id === docId) setSelectedDoc(null);
+    } catch (err) {
+      console.error('Error deleting document:', err);
+    }
   };
 
+  const handleGeneratePacket = async () => {
+    setLoadingPacket(true);
+    try {
+      const res = await API.get('/emergency-packet');
+      setEmergencyPacket(res.data);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error generating packet.');
+    } finally {
+      setLoadingPacket(false);
+    }
+  };
+
+  const handlePrintPacket = () => {
+    window.print();
+  };
+
+  const filteredDocs = documents.filter(doc => {
+    const q = search.toLowerCase();
+    return (
+      doc.title?.toLowerCase().includes(q) ||
+      doc.ai_summary?.toLowerCase().includes(q) ||
+      doc.ocr_text?.toLowerCase().includes(q)
+    );
+  });
+
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '—';
+  const getCategoryLabel = (cat) => t[cat] || cat;
+
+  // Summary to show based on language
+  const getSummary = (doc) => lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary;
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-stone-50 font-sans">
       {/* Header */}
-      <nav className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-3">
-          <div className="bg-blue-600 px-3 py-1.5 rounded-xl text-white font-bold text-xl shadow-md">RB</div>
-          <span className="text-xl font-bold text-slate-800">ResourceBridge</span>
+      <nav className="bg-white border-b border-stone-200 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-9 h-9 bg-blue-700 rounded-xl flex items-center justify-center shadow">
+            <FileText size={17} className="text-white" />
+          </div>
+          <span className="text-lg font-black text-stone-900 tracking-tight">{t.appName}</span>
         </div>
-        <button
-          onClick={onLogout}
-          className="flex items-center space-x-2 text-slate-500 hover:text-red-600 transition px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer"
-        >
-          <LogOut size={18} />
-          <span className="text-sm font-medium">Log Out</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={toggle}
+            className="text-xs font-semibold text-stone-500 border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-50 transition"
+          >
+            {t.language}
+          </button>
+          <button
+            onClick={() => setShowUploadPanel(true)}
+            className="hidden sm:flex items-center space-x-1.5 bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-800 transition shadow-sm"
+          >
+            <Upload size={15} />
+            <span>{t.uploadDocument}</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="flex items-center space-x-1.5 text-stone-400 hover:text-red-600 transition px-2 py-2 rounded-lg hover:bg-stone-100"
+          >
+            <LogOut size={17} />
+          </button>
+        </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Upload Panel Modal */}
+      {showUploadPanel && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowUploadPanel(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-stone-800 text-lg">{t.uploadTitle}</h3>
+              <button onClick={() => setShowUploadPanel(false)} className="text-stone-400 hover:text-stone-600"><X size={20} /></button>
+            </div>
 
-        {/* Left / Main Column */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Upload Form */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center space-x-2">
-              <Upload size={18} className="text-blue-600" />
-              <span>Process New Family Document</span>
-            </h3>
-
-            {error && (
-              <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">
-                {error}
-              </div>
+            {uploadError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-4 border border-red-100">{uploadError}</div>
             )}
 
-            {/* FIX: Expanded form to include title and category inputs.
-                The original only had a URL field, which meant all documents were
-                saved with the title "Uploaded Document" and no category. */}
-            <form onSubmit={handleUpload} className="space-y-3">
-              <div className="flex gap-3">
+            <form onSubmit={handleFileUpload} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-1">{t.docTitle}</label>
                 <input
                   type="text"
                   required
-                  placeholder="Document title (e.g. Lease Agreement 2024)"
-                  className="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  placeholder={t.docTitlePlaceholder}
+                  className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-stone-50"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={e => setTitle(e.target.value)}
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-1">{t.category}</label>
                 <select
-                  className="px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white text-slate-600"
+                  className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-stone-50"
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={e => setCategory(e.target.value)}
                 >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </option>
+                  {CATEGORIES.map(c => (
+                    <option key={c} value={c}>{getCategoryLabel(c)}</option>
                   ))}
                 </select>
               </div>
-              <div className="flex gap-3">
+
+              <div>
+                <label className="block text-sm font-semibold text-stone-700 mb-1">File (PDF or Image)</label>
                 <input
-                  type="url"
+                  ref={fileInputRef}
+                  type="file"
                   required
-                  placeholder="Paste public document URL (PDF or image link)..."
-                  className="flex-1 px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                  value={fileUrl}
-                  onChange={(e) => setFileUrl(e.target.value)}
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+                  className="w-full text-sm text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                 />
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition text-sm flex items-center space-x-2 shadow-sm cursor-pointer disabled:opacity-50"
-                >
-                  {uploading ? 'Processing...' : 'Upload & Analyze'}
-                </button>
               </div>
+
+              <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl border border-stone-200 hover:bg-stone-50">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded accent-red-600"
+                  checked={isEmergency}
+                  onChange={e => setIsEmergency(e.target.checked)}
+                />
+                <div className="flex items-center space-x-2 text-sm">
+                  <AlertTriangle size={15} className="text-red-500" />
+                  <span className="font-medium text-stone-700">{t.markEmergency}</span>
+                </div>
+              </label>
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition shadow-md text-sm disabled:opacity-60 cursor-pointer"
+              >
+                {uploading ? t.processing : t.uploadBtn}
+              </button>
             </form>
           </div>
+        </div>
+      )}
 
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search across your document vault..."
-              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      <div className="max-w-7xl mx-auto px-4 py-6">
 
-          {/* Document Grid */}
-          {filteredDocs.length === 0 ? (
-            <div className="text-center text-slate-400 py-16">
-              <FileText size={40} className="mx-auto mb-3 text-slate-300" />
-              <p className="text-sm">No documents yet. Upload your first document above.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredDocs.map((doc) => (
-                <div
-                  key={doc.id}
-                  onClick={() => setSelectedDoc(doc)}
-                  className={`p-5 bg-white border rounded-2xl cursor-pointer hover:shadow-md transition shadow-sm ${selectedDoc?.id === doc.id ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-slate-200'}`}
+        {/* Tabs */}
+        <div className="flex space-x-1 bg-stone-100 p-1 rounded-xl w-fit mb-6">
+          {['documents', 'emergency'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${activeTab === tab ? 'bg-white shadow text-stone-900' : 'text-stone-500 hover:text-stone-700'}`}
+            >
+              {tab === 'documents' ? t.myDocuments : (
+                <span className="flex items-center space-x-1.5">
+                  <AlertTriangle size={14} className="text-red-500" />
+                  <span>{t.emergencyTab}</span>
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Documents Tab ── */}
+        {activeTab === 'documents' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-5">
+
+              {/* Search + Filters */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-3.5 text-stone-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder={t.searchPlaceholder}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+                <select
+                  className="px-4 py-3 bg-white border border-stone-200 rounded-xl focus:outline-none text-sm shadow-sm text-stone-600"
+                  value={categoryFilter}
+                  onChange={e => setCategoryFilter(e.target.value)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="bg-blue-50 p-3 rounded-xl text-blue-600"><FileText size={22} /></div>
-                    <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full">
-                      {doc.category || 'General'}
-                    </span>
+                  <option value="All">{t.allCategories}</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{getCategoryLabel(c)}</option>)}
+                </select>
+                <button
+                  onClick={() => setShowUploadPanel(true)}
+                  className="sm:hidden flex items-center justify-center space-x-2 bg-blue-700 text-white text-sm font-semibold px-4 py-3 rounded-xl"
+                >
+                  <Upload size={15} />
+                  <span>{t.uploadDocument}</span>
+                </button>
+              </div>
+
+              {/* Document Grid */}
+              {filteredDocs.length === 0 ? (
+                <div className="text-center py-20 text-stone-400">
+                  <FileText size={44} className="mx-auto mb-3 text-stone-300" />
+                  <p className="font-medium text-stone-500">{t.noDocuments}</p>
+                  <p className="text-sm mt-1">{t.noDocumentsHint}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredDocs.map(doc => (
+                    <div
+                      key={doc.id}
+                      onClick={() => setSelectedDoc(doc)}
+                      className={`p-5 bg-white border rounded-2xl cursor-pointer hover:shadow-md transition shadow-sm relative group ${selectedDoc?.id === doc.id ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-stone-200'}`}
+                    >
+                      {doc.is_emergency && (
+                        <div className="absolute top-3 right-3">
+                          <AlertTriangle size={15} className="text-red-500" />
+                        </div>
+                      )}
+                      <div className="flex items-start justify-between">
+                        <div className="bg-blue-50 p-2.5 rounded-xl text-blue-600"><FileText size={20} /></div>
+                        <span className="text-xs font-semibold px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full mr-5">
+                          {getCategoryLabel(doc.category)}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-stone-800 mt-4 line-clamp-1 text-sm">{doc.title}</h4>
+                      <p className="text-xs text-stone-400 mt-1">{t.uploaded}: {formatDate(doc.created_at)}</p>
+                      <p className="text-sm text-stone-500 mt-2 line-clamp-2 leading-relaxed">
+                        {getSummary(doc) || 'Click to view AI analysis...'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Detail Panel */}
+            <div className="lg:col-span-1">
+              {selectedDoc ? (
+                <div className="bg-white rounded-2xl border border-stone-200 shadow-sm sticky top-20 overflow-hidden">
+                  {/* Panel Header */}
+                  <div className="p-5 border-b border-stone-100 bg-stone-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-1.5 text-blue-600 mb-1">
+                          <Sparkles size={13} />
+                          <span className="text-xs font-bold uppercase tracking-wider">{t.aiSummary}</span>
+                        </div>
+                        <h3 className="font-bold text-stone-900 text-base leading-tight truncate">{selectedDoc.title}</h3>
+                        <p className="text-xs text-stone-400 mt-0.5">{getCategoryLabel(selectedDoc.category)}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedDoc(null)}
+                        className="text-stone-400 hover:text-stone-600 ml-2 flex-shrink-0"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex gap-2 mt-4">
+                      <a
+                        href={selectedDoc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition"
+                      >
+                        <ExternalLink size={13} />
+                        <span>{t.viewOriginal}</span>
+                      </a>
+                      <button
+                        onClick={() => handleDelete(selectedDoc.id)}
+                        className="flex items-center space-x-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 transition"
+                      >
+                        <Trash2 size={13} />
+                        <span>{t.deleteDoc}</span>
+                      </button>
+                    </div>
                   </div>
-                  {/* FIX: Show the actual document title instead of "Document #id" */}
-                  <h4 className="font-bold text-slate-800 mt-4 line-clamp-1">{doc.title}</h4>
-                  {/* FIX: formatDate() safely handles undefined created_at */}
-                  <p className="text-xs text-slate-400 mt-1">Uploaded: {formatDate(doc.created_at)}</p>
-                  <p className="text-sm text-slate-500 mt-3 line-clamp-2">
-                    {doc.ai_summary || 'Click to read plain-language breakdown...'}
-                  </p>
+
+                  <div className="p-5 space-y-5 max-h-[65vh] overflow-y-auto">
+                    {/* Summary */}
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <Globe size={13} />
+                        <span>{t.plainLanguage}</span>
+                      </h4>
+                      <p className="text-sm text-stone-700 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100">
+                        {getSummary(selectedDoc) || '—'}
+                      </p>
+                    </div>
+
+                    {/* Action Items */}
+                    {selectedDoc.action_items && selectedDoc.action_items.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                          <CheckCircle size={13} />
+                          <span>{t.actionItems}</span>
+                        </h4>
+                        <div className="space-y-2">
+                          {selectedDoc.action_items.map((item, i) => (
+                            <div
+                              key={i}
+                              className={`p-3 rounded-xl border text-xs ${PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.low}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-semibold leading-snug">{item.task}</p>
+                                <span className="text-xs font-bold uppercase tracking-wide flex-shrink-0">
+                                  {t[`${item.priority}Priority`] || item.priority}
+                                </span>
+                              </div>
+                              {item.deadline && (
+                                <div className="flex items-center space-x-1 mt-1.5 opacity-80">
+                                  <Clock size={11} />
+                                  <span>{t.deadline}: {item.deadline}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Extracted Text */}
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <FileText size={13} />
+                        <span>{t.extractedText}</span>
+                      </h4>
+                      <pre className="text-xs text-stone-500 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+                        {selectedDoc.ocr_text || '—'}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <div className="bg-white border border-dashed border-stone-200 rounded-2xl p-10 text-center flex flex-col items-center justify-center min-h-[280px]">
+                  <FileText size={40} className="mb-3 text-stone-200" />
+                  <p className="text-sm text-stone-400 font-medium">{t.selectDoc}</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Right Column — Detail Panel */}
-        <div className="lg:col-span-1">
-          {selectedDoc ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6 sticky top-8">
-              <div className="border-b border-slate-100 pb-4">
-                <div className="flex items-center space-x-2 text-blue-600 mb-1">
-                  <Sparkles size={18} />
-                  <span className="text-xs font-bold uppercase tracking-wider">AI Intelligence Summary</span>
+        {/* ── Emergency Tab ── */}
+        {activeTab === 'emergency' && (
+          <div className="max-w-3xl">
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+                  <AlertTriangle size={20} className="text-red-500" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-800">{selectedDoc.title}</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Category: {selectedDoc.category || 'General'}</p>
-              </div>
-
-              <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-700 flex items-center space-x-2 mb-1">
-                    <Sparkles size={16} className="text-slate-400" />
-                    <span>Plain-Language Explanation</span>
-                  </h4>
-                  <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    {selectedDoc.ai_summary || 'No summary available.'}
-                  </p>
-                </div>
-
-                {/* FIX: Changed selectedDoc.translation → selectedDoc.ocr_text
-                    "translation" doesn't exist in the schema. The raw extracted text
-                    is stored in ocr_text, which is the correct field to display here. */}
-                <div>
-                  <h4 className="text-sm font-bold text-slate-700 flex items-center space-x-2 mb-1">
-                    <Globe size={16} className="text-slate-400" />
-                    <span>Extracted Document Text</span>
-                  </h4>
-                  <p className="text-sm text-slate-600 leading-relaxed bg-blue-50/40 p-4 rounded-xl border border-blue-100/40 max-h-64 overflow-y-auto whitespace-pre-wrap">
-                    {selectedDoc.ocr_text || 'No extracted text available.'}
-                  </p>
+                  <h2 className="font-bold text-stone-900">{t.emergencyTitle}</h2>
+                  <p className="text-sm text-stone-500">{t.emergencySubtitle}</p>
                 </div>
               </div>
+              <button
+                onClick={handleGeneratePacket}
+                disabled={loadingPacket}
+                className="mt-4 flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-sm text-sm disabled:opacity-60"
+              >
+                <Printer size={16} />
+                <span>{loadingPacket ? t.processing : t.generatePacket}</span>
+              </button>
             </div>
-          ) : (
-            <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 flex flex-col items-center justify-center min-h-[300px] shadow-sm">
-              <FileText size={40} className="mb-3 text-slate-300" />
-              <p className="text-sm font-medium text-slate-500">
-                Select any document to review its AI analysis.
-              </p>
-            </div>
-          )}
-        </div>
 
+            {emergencyPacket ? (
+              <div className="space-y-4 print:block" id="emergency-packet">
+                <div className="hidden print:block text-center mb-6">
+                  <h1 className="text-2xl font-bold">ResourceBridge Emergency Packet</h1>
+                  <p className="text-sm text-gray-500">{emergencyPacket.owner_email} — {new Date().toLocaleDateString()}</p>
+                </div>
+                {emergencyPacket.documents.map((doc, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-red-100 shadow-sm p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-bold text-stone-900">{doc.title}</h3>
+                        <span className="text-xs text-stone-400">{getCategoryLabel(doc.category)} · {formatDate(doc.uploaded)}</span>
+                      </div>
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 flex items-center space-x-1 hover:underline print:hidden"
+                      >
+                        <ExternalLink size={12} />
+                        <span>{t.viewOriginal}</span>
+                      </a>
+                    </div>
+                    <div className="text-sm text-stone-600 bg-stone-50 p-4 rounded-xl border border-stone-100 mb-3 leading-relaxed">
+                      {lang === 'es' && doc.summary_es ? doc.summary_es : doc.summary}
+                    </div>
+                    {doc.action_items?.length > 0 && (
+                      <div className="space-y-1.5">
+                        {doc.action_items.map((item, j) => (
+                          <div key={j} className={`flex items-start space-x-2 text-xs p-2 rounded-lg border ${PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.low}`}>
+                            <CheckCircle size={12} className="mt-0.5 flex-shrink-0" />
+                            <div>
+                              <span className="font-semibold">{item.task}</span>
+                              {item.deadline && <span className="ml-2 opacity-70">· {item.deadline}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={handlePrintPacket}
+                  className="flex items-center space-x-2 text-sm font-semibold text-stone-700 border border-stone-200 px-5 py-2.5 rounded-xl hover:bg-stone-50 transition print:hidden"
+                >
+                  <Printer size={15} />
+                  <span>{t.printPacket}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-16 text-stone-400">
+                <AlertTriangle size={40} className="mx-auto mb-3 text-stone-200" />
+                <p className="font-medium text-stone-500">{t.noEmergencyDocs}</p>
+                <p className="text-sm mt-1 max-w-sm mx-auto">{t.noEmergencyHint}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
