@@ -28,7 +28,7 @@ export default function Dashboard({ onLogout }) {
     setUploading(true);
     try {
       // Connects directly to Render OCR text-extraction + Gemini processing logic
-      const res = await API.post('/documents/process', { file_url: fileUrl });
+      const res = await API.post('/documents', { title: "Uploaded Document", file_url: fileUrl });
       setDocuments([res.data, ...documents]);
       setFileUrl('');
     } catch (err) {

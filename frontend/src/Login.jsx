@@ -7,7 +7,7 @@ export default function Login({ setToken }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
@@ -16,18 +16,15 @@ export default function Login({ setToken }) {
         setIsSignUp(false); 
         alert('Account created successfully! Please sign in.');
       } else {
-        // OAuth2 login requires URLSearchParams (Form Data)
-        const formData = new URLSearchParams();
-        formData.append('username', email); 
-        formData.append('password', password);
+        // Correctly format standard OAuth2 form-urlencoded parameters
+        const params = new URLSearchParams();
+        params.append('username', email); 
+        params.append('password', password);
         
-        const response = await API.post('/login', formData, {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        });
+        // Axios natively handles URLSearchParams serialization perfectly
+        const response = await API.post('/login', params);
         
-        // Save the token and log in
+        // Save the secure token and update global state to log in
         localStorage.setItem('token', response.data.access_token);
         setToken(response.data.access_token);
       }
