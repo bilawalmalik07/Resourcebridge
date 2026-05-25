@@ -12,14 +12,14 @@ export default function Login({ setToken }) {
     setError('');
     try {
       if (isSignUp) {
-        await API.post('/auth/signup', { email, password });
+        await API.post('/register', { email, password });
         setIsSignUp(false); // Switch back to login view after signing up successfully
       } else {
         const formData = new URLSearchParams();
         formData.append('username', email);
         formData.append('password', password);
         
-        const response = await API.post('/auth/token', formData);
+        const response = await API.post('/login', formData);
         localStorage.setItem('token', response.data.access_token);
         setToken(response.data.access_token);
       }
