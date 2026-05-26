@@ -19,6 +19,8 @@ SUPPORTED_MIME_TYPES = {
     ".jpeg": "image/jpeg",
     ".webp": "image/webp",
     ".gif": "image/gif",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword"
 }
 
 
