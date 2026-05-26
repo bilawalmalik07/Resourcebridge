@@ -12,33 +12,66 @@ load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
-# File types Gemini can read natively
+# ONLY what Gemini Files API actually supports natively
 GEMINI_SUPPORTED = {
-    ".pdf": "application/pdf",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
+    ".pdf":  "application/pdf",
+    ".png":  "image/png",
+    ".jpg":  "image/jpeg",
     ".jpeg": "image/jpeg",
     ".webp": "image/webp",
-    ".gif": "image/gif",
+    ".gif":  "image/gif",
     ".tiff": "image/tiff",
-    ".tif": "image/tiff",
-    ".bmp": "image/bmp",
+    ".tif":  "image/tiff",
+    ".bmp":  "image/bmp",
 }
 
-# File types we extract as plain text first, then send text to Gemini
-TEXT_EXTRACTABLE = {".docx", ".doc", ".xlsx", ".xls",
-                    ".pptx", ".ppt", ".txt", ".rtf", ".csv", ".odt"}
+# These get text extracted locally first, then sent as plain text to Gemini
+TEXT_EXTRACTABLE = {
+    ".docx", ".doc", ".xlsx", ".xls",
+    ".pptx", ".ppt", ".txt", ".rtf", ".csv"
+}
+
+PROMPT = """
+You are the core intelligence of ResourceBridge — a platform helping immigrant 
+and working-class families understand important documents.
+
+Analyze the provided document and perform FOUR tasks:
+
+1. OCR_TEXT: Extract all readable text exactly as it appears in the document.
+
+2. SUMMARY_EN: Write a clear, plain-language English summary. Focus on:
+   - What this document is
+   - What action (if any) the family needs to take
+   - Any deadlines mentioned
+   - Who sent it and why it matters
+
+3. SUMMARY_ES: Write the same summary in clear, simple Spanish.
+
+4. ACTION_ITEMS: Extract a JSON array of specific action items or reminders.
+   Each item: {"task": "...", "deadline": "YYYY-MM-DD or null", "priority": "high|medium|low"}
+   If none exist return: []
+
+Return EXACTLY in this format, nothing outside the tags:
+
+---OCR_TEXT---
+[extracted text here]
+---SUMMARY_EN---
+[English summary here]
+---SUMMARY_ES---
+[Spanish summary here]
+---ACTION_ITEMS---
+[JSON array here]
+"""
 
 
 def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
-    """Extract plain text from Office/text files so Gemini can read them."""
+    """Extract plain text from Office files so Gemini can read them as text."""
     if ext in (".docx", ".doc"):
         try:
             import mammoth
             import io
-            result = mammoth.extract_raw_text(io.BytesIO(file_bytes))
-            return result.value
-        except ImportError:
+            return mammoth.extract_raw_text(io.BytesIO(file_bytes)).value
+        except Exception:
             pass
         try:
             from docx import Document
@@ -88,74 +121,42 @@ def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
 
 
 def process_document_with_ai(file_url: str) -> dict:
-    """
-    Downloads the document, sends it to Gemini for analysis.
-    - PDFs and images: sent directly to Gemini Files API
-    - Office files (docx, xlsx, etc.): text extracted first, then sent as a text prompt
-    - Unknown/missing extension: defaults to PDF handling
-    """
     try:
-        print(f"Downloading document from: {file_url}")
+        print(f"Downloading: {file_url}")
         response = requests.get(file_url, timeout=30)
         response.raise_for_status()
-
-        # Try to get extension from URL, stripping Cloudinary query params
-        url_path = file_url.split("?")[0]
-        ext = Path(url_path).suffix.lower()
-
-        # FIX: If Cloudinary strips the extension or it's unrecognized,
-        # default to PDF — it's the most common document type
-        if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
-            print(
-                f"Unknown or missing extension '{ext}', defaulting to PDF handling")
-            ext = ".pdf"
-
         file_bytes = response.content
 
-        prompt = """
-        You are the core intelligence of ResourceBridge — a platform helping immigrant 
-        and working-class families understand important documents.
+        url_clean = file_url.split("?")[0]
+        ext = Path(url_clean).suffix.lower()
 
-        Analyze the provided document and perform FOUR tasks:
+        if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
+            content_type = response.headers.get("Content-Type", "")
+            if "pdf" in content_type:
+                ext = ".pdf"
+            elif "png" in content_type:
+                ext = ".png"
+            elif "jpeg" in content_type or "jpg" in content_type:
+                ext = ".jpg"
+            elif "word" in content_type or "docx" in content_type:
+                ext = ".docx"
+            elif "excel" in content_type or "xlsx" in content_type:
+                ext = ".xlsx"
+            else:
 
-        1. OCR_TEXT: Extract all readable text exactly as it appears in the document.
-
-        2. SUMMARY_EN: Write a clear, plain-language English summary. Focus on:
-           - What this document is
-           - What action (if any) the family needs to take
-           - Any deadlines mentioned
-           - Who sent it and why it matters
-
-        3. SUMMARY_ES: Write the same summary in clear, simple Spanish.
-
-        4. ACTION_ITEMS: Extract a JSON array of specific action items or reminders 
-           from the document. Each item should have:
-           - "task": short description of what needs to be done
-           - "deadline": deadline if mentioned, otherwise null
-           - "priority": "high", "medium", or "low"
-           
-           If no action items exist, return an empty array: []
-
-        Return EXACTLY in this format:
-
-        ---OCR_TEXT---
-        [extracted text here]
-        ---SUMMARY_EN---
-        [English summary here]
-        ---SUMMARY_ES---
-        [Spanish summary here]
-        ---ACTION_ITEMS---
-        [JSON array here]
-        """
+                ext = ".pdf"
+            print(
+                f"Extension sniffed from Content-Type '{content_type}' → {ext}")
 
         if ext in GEMINI_SUPPORTED:
-            # Native path: PDF or image → send file directly to Gemini
             mime_type = GEMINI_SUPPORTED[ext]
-            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+
+            suffix = ext if ext else ".pdf"
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                 tmp.write(file_bytes)
                 tmp_path = tmp.name
 
-            print(f"Uploading to Gemini Files API ({mime_type})...")
+            print(f"Sending to Gemini Files API as {mime_type}...")
             uploaded_file = client.files.upload(
                 file=tmp_path,
                 config=types.UploadFileConfig(mime_type=mime_type)
@@ -164,34 +165,33 @@ def process_document_with_ai(file_url: str) -> dict:
 
             ai_response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=[uploaded_file, prompt]
+                contents=[uploaded_file, PROMPT]
             )
 
-        else:
-            # Office path: extract text, send as plain text prompt to Gemini
-            print(f"Extracting text from {ext} file...")
-            extracted_text = _extract_text_from_office(file_bytes, ext)
+        elif ext in TEXT_EXTRACTABLE:
+            print(f"Extracting text from {ext}...")
+            extracted = _extract_text_from_office(file_bytes, ext)
 
-            if not extracted_text.strip():
+            if not extracted.strip():
                 return {
                     "ocr_text": "Could not extract text from this file.",
-                    "ai_summary": "Unable to read this file. Please try converting it to PDF first.",
-                    "ai_summary_es": "No se pudo leer este archivo. Por favor conviértalo a PDF primero.",
+                    "ai_summary": "Unable to read this file. Please convert it to PDF and re-upload.",
+                    "ai_summary_es": "No se pudo leer este archivo. Por favor conviértalo a PDF.",
                     "action_items": [],
                 }
 
-            text_prompt = f"""
-            {prompt}
-            
-            Here is the full text content of the document:
-            
-            {extracted_text}
-            """
-
             ai_response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=text_prompt
+                contents=f"{PROMPT}\n\nHere is the document text:\n\n{extracted}"
             )
+
+        else:
+            return {
+                "ocr_text": "",
+                "ai_summary": "Unsupported file type. Please upload a PDF, image, or Office document.",
+                "ai_summary_es": "Tipo de archivo no compatible. Suba un PDF, imagen o documento de Office.",
+                "action_items": [],
+            }
 
         response_text = ai_response.text
 
@@ -202,7 +202,6 @@ def process_document_with_ai(file_url: str) -> dict:
             response_text, "SUMMARY_ES",  "ACTION_ITEMS")
         action_raw = _extract_section(response_text, "ACTION_ITEMS", None)
 
-        action_items = []
         try:
             action_items = json.loads(action_raw)
         except Exception:
@@ -216,17 +215,17 @@ def process_document_with_ai(file_url: str) -> dict:
         }
 
     except requests.exceptions.RequestException as e:
-        print(f"Error downloading document: {e}")
+        print(f"Download error: {e}")
         return {
-            "ocr_text": "Failed to download document from the provided URL.",
-            "ai_summary": "Could not process document — please check the URL is publicly accessible.",
-            "ai_summary_es": "No se pudo procesar el documento.",
+            "ocr_text": "Failed to download the document.",
+            "ai_summary": "Could not reach the file URL. Please try again.",
+            "ai_summary_es": "No se pudo acceder al archivo.",
             "action_items": [],
         }
     except Exception as e:
-        print(f"Error processing document with Gemini: {e}")
+        print(f"Gemini processing error: {type(e).__name__}: {e}")
         return {
-            "ocr_text": "Failed to extract text automatically.",
+            "ocr_text": f"Error: {type(e).__name__}: {str(e)[:200]}",
             "ai_summary": "Summary unavailable at this moment.",
             "ai_summary_es": "Resumen no disponible en este momento.",
             "action_items": [],
@@ -238,10 +237,8 @@ def _extract_section(text: str, start_tag: str, end_tag: str | None) -> str:
     try:
         start_idx = text.index(start_marker) + len(start_marker)
         if end_tag:
-            end_marker = f"---{end_tag}---"
-            end_idx = text.index(end_marker)
+            end_idx = text.index(f"---{end_tag}---")
             return text[start_idx:end_idx].strip()
-        else:
-            return text[start_idx:].strip()
+        return text[start_idx:].strip()
     except ValueError:
         return ""
