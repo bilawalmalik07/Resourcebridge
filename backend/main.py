@@ -88,8 +88,26 @@ async def upload_file(
     current_user: models.User = Depends(security.get_current_user)
 ):
     allowed_types = {
-        "application/pdf", "image/png", "image/jpeg",
-        "image/jpg", "image/webp", "image/gif"
+        # Images
+        "image/png", "image/jpeg", "image/jpg", "image/webp",
+        "image/gif", "image/heic", "image/heif", "image/tiff", "image/bmp",
+        # PDF
+        "application/pdf",
+        # Word
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        # Excel
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        # PowerPoint
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        # Text / CSV
+        "text/plain", "text/csv", "text/rtf",
+        # OpenDocument formats
+        "application/vnd.oasis.opendocument.text",
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "application/vnd.oasis.opendocument.presentation",
     }
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Unsupported file type.")
