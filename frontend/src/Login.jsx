@@ -17,14 +17,14 @@ export default function Login({ setToken }) {
     setLoading(true);
     try {
       if (isSignUp) {
-        await API.post('/register', { email, password });
+        await API.post('/api/register', { email, password });
         setIsSignUp(false);
         alert(t.accountCreated);
       } else {
         const params = new URLSearchParams();
         params.append('username', email);
         params.append('password', password);
-        const response = await API.post('/login', params);
+        const response = await API.post('/api/login', params);
         localStorage.setItem('token', response.data.access_token);
         setToken(response.data.access_token);
       }

@@ -2,8 +2,11 @@ services:
   - type: web
     name: Resourcebridge
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    rootDir: .
+    buildCommand: >
+      cd frontend && npm install && npm run build &&
+      cd ../backend && pip install -r requirements.txt
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -15,11 +18,11 @@ services:
         value: "30"
       - key: GEMINI_API_KEY
         sync: false
-      - key: ALLOWED_ORIGINS
-        sync: false # Set to your Render frontend URL e.g. https://resourcebridge-frontend.onrender.com
       - key: CLOUDINARY_CLOUD_NAME
-        sync: false # From cloudinary.com dashboard
+        sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: ALLOWED_ORIGINS
+        value: "http://localhost:5173"

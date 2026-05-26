@@ -1,9 +1,9 @@
 import os
-import io
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from dotenv import load_dotenv
@@ -31,20 +31,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-VALID_CATEGORIES = [
-    "immigration", "school", "housing", "employment",
-    "healthcare", "benefits", "emergency", "Uncategorized"
-]
-
 
 # ─── Health ────────────────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.get("/api/health")
 def read_root():
     return {"status": "healthy", "project": "ResourceBridge"}
 
 
-@app.get("/test-db")
+@app.get("/api/test-db")
 def test_database_connection(db: Session = Depends(get_db)):
     try:
         result = db.execute(text("SELECT 1")).fetchone()
@@ -56,7 +51,7 @@ def test_database_connection(db: Session = Depends(get_db)):
 
 # ─── Auth ──────────────────────────────────────────────────────────────────────
 
-@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/api/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     existing = db.query(models.User).filter(
         models.User.email == user_in.email).first()
@@ -71,7 +66,7 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     return user
 
 
-@app.post("/login", response_model=schemas.Token)
+@app.post("/api/login", response_model=schemas.Token)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(
         models.User.email == form_data.username).first()
@@ -85,56 +80,42 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
     return {"access_token": token, "token_type": "bearer"}
 
 
-# ─── File Upload to Cloudinary ─────────────────────────────────────────────────
+# ─── File Upload ───────────────────────────────────────────────────────────────
 
-@app.post("/upload", response_model=schemas.UploadResponse)
+@app.post("/api/upload", response_model=schemas.UploadResponse)
 async def upload_file(
     file: UploadFile = File(...),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """
-    Accepts a real file upload from the browser, stores it in Cloudinary,
-    and returns the secure public URL to be used when creating a document record.
-    """
     allowed_types = {
         "application/pdf", "image/png", "image/jpeg",
         "image/jpg", "image/webp", "image/gif"
     }
     if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file type. Please upload a PDF or image file."
-        )
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
 
-    # Limit file size to 20MB
     file_bytes = await file.read()
     if len(file_bytes) > 20 * 1024 * 1024:
         raise HTTPException(
-            status_code=400, detail="File too large. Maximum size is 20MB.")
+            status_code=400, detail="File too large. Maximum 20MB.")
 
     folder = f"resourcebridge/user_{current_user.id}"
     file_url = cloudinary_service.upload_file_to_cloudinary(
         file_bytes, file.filename or "document", folder=folder
     )
-
     return {"file_url": file_url, "original_filename": file.filename or "document"}
 
 
 # ─── Documents ─────────────────────────────────────────────────────────────────
 
-@app.post("/documents", response_model=schemas.DocumentResponse, status_code=201)
+@app.post("/api/documents", response_model=schemas.DocumentResponse, status_code=201)
 def create_document(
     doc_in: schemas.DocumentCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """
-    Creates a document record and triggers the full Gemini AI pipeline:
-    OCR, English summary, Spanish summary, and action items extraction.
-    """
-    print(f"Processing document: {doc_in.title}")
+    print(f"Processing: {doc_in.title}")
     ai = ai_service.process_document_with_ai(doc_in.file_url)
-
     doc = models.Document(
         title=doc_in.title,
         file_url=doc_in.file_url,
@@ -152,17 +133,13 @@ def create_document(
     return doc
 
 
-@app.get("/documents", response_model=list[schemas.DocumentResponse])
+@app.get("/api/documents", response_model=list[schemas.DocumentResponse])
 def get_documents(
     category: str | None = Query(default=None),
     emergency_only: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """
-    Returns all documents for the authenticated user.
-    Optionally filter by category or emergency flag.
-    """
     query = db.query(models.Document).filter(
         models.Document.owner_id == current_user.id)
     if category and category != "All":
@@ -172,7 +149,7 @@ def get_documents(
     return query.order_by(models.Document.created_at.desc()).all()
 
 
-@app.get("/documents/{doc_id}", response_model=schemas.DocumentResponse)
+@app.get("/api/documents/{doc_id}", response_model=schemas.DocumentResponse)
 def get_document(
     doc_id: int,
     db: Session = Depends(get_db),
@@ -187,7 +164,7 @@ def get_document(
     return doc
 
 
-@app.delete("/documents/{doc_id}", status_code=204)
+@app.delete("/api/documents/{doc_id}", status_code=204)
 def delete_document(
     doc_id: int,
     db: Session = Depends(get_db),
@@ -205,27 +182,19 @@ def delete_document(
 
 # ─── Emergency Packet ──────────────────────────────────────────────────────────
 
-@app.get("/emergency-packet")
+@app.get("/api/emergency-packet")
 def generate_emergency_packet(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """
-    Gathers all documents flagged as emergency and returns a structured
-    emergency preparedness packet as JSON (frontend renders it as printable HTML).
-    """
     docs = db.query(models.Document).filter(
         models.Document.owner_id == current_user.id,
         models.Document.is_emergency == True
     ).all()
-
     if not docs:
         raise HTTPException(
-            status_code=404,
-            detail="No emergency documents found. Mark documents as emergency when uploading."
-        )
-
-    packet = {
+            status_code=404, detail="No emergency documents found.")
+    return {
         "owner_email": current_user.email,
         "document_count": len(docs),
         "documents": [
@@ -241,4 +210,15 @@ def generate_emergency_packet(
             for d in docs
         ]
     }
-    return packet
+
+
+FRONTEND_DIST = os.path.join(os.path.dirname(
+    __file__), "..", "frontend", "dist")
+
+if os.path.exists(FRONTEND_DIST):
+    app.mount(
+        "/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_react(full_path: str):
+        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))

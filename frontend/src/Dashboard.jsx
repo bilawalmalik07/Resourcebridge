@@ -40,7 +40,7 @@ export default function Dashboard({ onLogout }) {
       const params = new URLSearchParams();
       if (categoryFilter !== 'All') params.append('category', categoryFilter);
       if (emergencyOnly) params.append('emergency_only', 'true');
-      const res = await API.get(`/documents?${params}`);
+      const res = await API.get(`/api/documents?${params}`);
       setDocuments(res.data);
     } catch (err) {
       console.error('Error fetching documents:', err);
@@ -59,12 +59,12 @@ export default function Dashboard({ onLogout }) {
       // Step 1: Upload file to Cloudinary via backend
       const formData = new FormData();
       formData.append('file', file);
-      const uploadRes = await API.post('/upload', formData, {
+      const uploadRes = await API.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       // Step 2: Create document record with returned URL + trigger AI pipeline
-      const docRes = await API.post('/documents', {
+      const docRes = await API.post('/api/documents', {
         title,
         file_url: uploadRes.data.file_url,
         category,
@@ -87,7 +87,7 @@ export default function Dashboard({ onLogout }) {
   const handleDelete = async (docId) => {
     if (!window.confirm('Delete this document?')) return;
     try {
-      await API.delete(`/documents/${docId}`);
+      await API.delete(`/api/documents/${docId}`);
       setDocuments(prev => prev.filter(d => d.id !== docId));
       if (selectedDoc?.id === docId) setSelectedDoc(null);
     } catch (err) {
@@ -98,7 +98,7 @@ export default function Dashboard({ onLogout }) {
   const handleGeneratePacket = async () => {
     setLoadingPacket(true);
     try {
-      const res = await API.get('/emergency-packet');
+      const res = await API.get('/api/emergency-packet');
       setEmergencyPacket(res.data);
     } catch (err) {
       alert(err.response?.data?.detail || 'Error generating packet.');
