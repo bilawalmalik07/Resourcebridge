@@ -204,7 +204,7 @@ export default function Dashboard({ onLogout }) {
                   ref={fileInputRef}
                   type="file"
                   required
-                  accept=".pdf,.png,.jpg,.jpeg,.webp,.gif"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.py"
                   className="w-full text-sm text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                 />
               </div>
