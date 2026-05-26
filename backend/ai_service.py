@@ -32,7 +32,7 @@ TEXT_EXTRACTABLE = {".docx", ".doc", ".xlsx", ".xls",
 
 def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
     """Extract plain text from Office/text files so Gemini can read them."""
-    if ext == ".docx":
+    if ext in (".docx", ".doc"):
         try:
             import mammoth
             import io
@@ -92,17 +92,26 @@ def process_document_with_ai(file_url: str) -> dict:
     Downloads the document, sends it to Gemini for analysis.
     - PDFs and images: sent directly to Gemini Files API
     - Office files (docx, xlsx, etc.): text extracted first, then sent as a text prompt
+    - Unknown/missing extension: defaults to PDF handling
     """
     try:
         print(f"Downloading document from: {file_url}")
         response = requests.get(file_url, timeout=30)
         response.raise_for_status()
 
+        # Try to get extension from URL, stripping Cloudinary query params
         url_path = file_url.split("?")[0]
         ext = Path(url_path).suffix.lower()
+
+        # FIX: If Cloudinary strips the extension or it's unrecognized,
+        # default to PDF — it's the most common document type
+        if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
+            print(
+                f"Unknown or missing extension '{ext}', defaulting to PDF handling")
+            ext = ".pdf"
+
         file_bytes = response.content
 
-        # Build the AI prompt
         prompt = """
         You are the core intelligence of ResourceBridge — a platform helping immigrant 
         and working-class families understand important documents.
@@ -140,7 +149,7 @@ def process_document_with_ai(file_url: str) -> dict:
         """
 
         if ext in GEMINI_SUPPORTED:
-            # ── Native path: PDF or image → send file directly to Gemini ──
+            # Native path: PDF or image → send file directly to Gemini
             mime_type = GEMINI_SUPPORTED[ext]
             with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
                 tmp.write(file_bytes)
@@ -158,16 +167,16 @@ def process_document_with_ai(file_url: str) -> dict:
                 contents=[uploaded_file, prompt]
             )
 
-        elif ext in TEXT_EXTRACTABLE:
-            # ── Office path: extract text, send as plain text prompt to Gemini ──
+        else:
+            # Office path: extract text, send as plain text prompt to Gemini
             print(f"Extracting text from {ext} file...")
             extracted_text = _extract_text_from_office(file_bytes, ext)
 
             if not extracted_text.strip():
                 return {
-                    "ocr_text": "Could not extract text from this file format.",
-                    "ai_summary": "Unable to read this file type. Please try uploading as PDF.",
-                    "ai_summary_es": "No se pudo leer este tipo de archivo. Por favor suba como PDF.",
+                    "ocr_text": "Could not extract text from this file.",
+                    "ai_summary": "Unable to read this file. Please try converting it to PDF first.",
+                    "ai_summary_es": "No se pudo leer este archivo. Por favor conviértalo a PDF primero.",
                     "action_items": [],
                 }
 
@@ -183,14 +192,6 @@ def process_document_with_ai(file_url: str) -> dict:
                 model="gemini-2.5-flash",
                 contents=text_prompt
             )
-
-        else:
-            return {
-                "ocr_text": f"File type '{ext}' is not supported for AI analysis.",
-                "ai_summary": "Please upload a PDF, image, or common Office document.",
-                "ai_summary_es": "Por favor suba un PDF, imagen o documento de Office.",
-                "action_items": [],
-            }
 
         response_text = ai_response.text
 
