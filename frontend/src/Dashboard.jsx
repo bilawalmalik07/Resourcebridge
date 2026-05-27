@@ -4,7 +4,7 @@ import { useLanguage } from './LanguageContext';
 import {
   FileText, Search, Upload, LogOut, Globe, Sparkles,
   AlertTriangle, Trash2, ExternalLink, CheckCircle,
-  Clock, ChevronDown, X, Printer
+  Clock, ChevronDown, X, Printer, Shield, ShieldOff
 } from 'lucide-react';
 
 const CATEGORIES = ['immigration', 'school', 'housing', 'employment', 'healthcare', 'benefits', 'emergency', 'Uncategorized'];
@@ -102,9 +102,9 @@ export default function Dashboard({ onLogout }) {
       });
       const updated = res.data;
       setDocuments(prev => prev.map(d => d.id === updated.id ? updated : d));
-      if (selectedDoc?.id === updated.id) setSelectedDoc(updated);
+      setSelectedDoc(updated);
     } catch (err) {
-      console.error('Error updating emergency status:', err);
+      console.error('Error toggling emergency:', err);
     }
   };
 
@@ -390,15 +390,11 @@ export default function Dashboard({ onLogout }) {
                         <span>{t.deleteDoc}</span>
                       </button>
                       <button
-                        onClick={() => handleToggleEmergency(doc)}
-                        className={`flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition ${
-                          doc.is_emergency
-                            ? 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100'
-                            : 'text-stone-500 bg-stone-50 border-stone-200 hover:bg-stone-100'
-                        }`}
+                        onClick={() => handleToggleEmergency(selectedDoc)}
+                        className={`flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition ${selectedDoc.is_emergency ? 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'}`}
                       >
-                        <AlertTriangle size={13} />
-                        <span>{doc.is_emergency ? 'Remove Emergency' : 'Mark Emergency'}</span>
+                        {selectedDoc.is_emergency ? <ShieldOff size={13} /> : <Shield size={13} />}
+                        <span>{selectedDoc.is_emergency ? 'Remove Emergency' : 'Mark Emergency'}</span>
                       </button>
                     </div>
                   </div>
@@ -492,6 +488,13 @@ export default function Dashboard({ onLogout }) {
                       >
                         <Trash2 size={13} />
                         <span>{t.deleteDoc}</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggleEmergency(selectedDoc)}
+                        className={`flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition ${selectedDoc.is_emergency ? 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'}`}
+                      >
+                        {selectedDoc.is_emergency ? <ShieldOff size={13} /> : <Shield size={13} />}
+                        <span>{selectedDoc.is_emergency ? 'Remove Emergency' : 'Mark Emergency'}</span>
                       </button>
                     </div>
                   </div>
