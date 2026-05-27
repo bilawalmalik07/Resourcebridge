@@ -27,11 +27,16 @@ class TokenData(BaseModel):
     email: str | None = None
 
 
+class EmergencyUpdate(BaseModel):
+    is_emergency: bool
+
+
 class DocumentCreate(BaseModel):
     title: str
     file_url: str
     category: str | None = None
     is_emergency: bool = False
+    # NEW: passed from upload so ai_service knows the type
     original_filename: str | None = None
 
 

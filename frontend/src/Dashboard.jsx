@@ -67,7 +67,6 @@ export default function Dashboard({ onLogout }) {
       const docRes = await API.post('/api/documents', {
         title,
         file_url: uploadRes.data.file_url,
-        original_filename: uploadRes.data.original_filename,  // tells backend the real file type
         category,
         is_emergency: isEmergency,
       });
@@ -93,6 +92,19 @@ export default function Dashboard({ onLogout }) {
       if (selectedDoc?.id === docId) setSelectedDoc(null);
     } catch (err) {
       console.error('Error deleting document:', err);
+    }
+  };
+
+  const handleToggleEmergency = async (doc) => {
+    try {
+      const res = await API.patch(`/api/documents/${doc.id}/emergency`, {
+        is_emergency: !doc.is_emergency,
+      });
+      const updated = res.data;
+      setDocuments(prev => prev.map(d => d.id === updated.id ? updated : d));
+      if (selectedDoc?.id === updated.id) setSelectedDoc(updated);
+    } catch (err) {
+      console.error('Error updating emergency status:', err);
     }
   };
 
@@ -376,6 +388,17 @@ export default function Dashboard({ onLogout }) {
                       >
                         <Trash2 size={13} />
                         <span>{t.deleteDoc}</span>
+                      </button>
+                      <button
+                        onClick={() => handleToggleEmergency(doc)}
+                        className={`flex items-center space-x-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition ${
+                          doc.is_emergency
+                            ? 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                            : 'text-stone-500 bg-stone-50 border-stone-200 hover:bg-stone-100'
+                        }`}
+                      >
+                        <AlertTriangle size={13} />
+                        <span>{doc.is_emergency ? 'Remove Emergency' : 'Mark Emergency'}</span>
                       </button>
                     </div>
                   </div>
