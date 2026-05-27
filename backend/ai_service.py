@@ -62,45 +62,46 @@ Return EXACTLY in this format:
 """
 
 
-def _detect_ext_from_content_type(content_type: str, url: str = "") -> str | None:
+def _resolve_ext(file_url: str, content_type: str, original_filename: str | None) -> str | None:
     """
-    Map Content-Type header to file extension.
-    Falls back to inspecting the URL path if Content-Type is generic (e.g. octet-stream).
-    Returns None if truly unknown.
+    Determine the file extension using three sources in priority order:
+    1. original_filename passed from the upload (most reliable)
+    2. Content-Type header
+    3. URL path suffix (works when cloudinary_service sets public_id correctly)
     """
-    ct = content_type.lower()
-    if "pdf" in ct:
-        return ".pdf"
-    if "png" in ct:
-        return ".png"
-    if "jpeg" in ct or "jpg" in ct:
-        return ".jpg"
-    if "webp" in ct:
-        return ".webp"
-    if "gif" in ct:
-        return ".gif"
-    if "tiff" in ct:
-        return ".tiff"
-    if "bmp" in ct:
-        return ".bmp"
-    if "wordprocessingml" in ct or "msword" in ct:
-        return ".docx"
-    if "spreadsheetml" in ct or "ms-excel" in ct:
-        return ".xlsx"
-    if "presentationml" in ct or "powerpoint" in ct:
-        return ".pptx"
-    if "text/plain" in ct:
-        return ".txt"
-    if "text/csv" in ct:
-        return ".csv"
+    # 1. Original filename — always trust this first
+    if original_filename:
+        ext = Path(original_filename).suffix.lower()
+        if ext in GEMINI_SUPPORTED or ext in TEXT_EXTRACTABLE:
+            print(f"Extension from original_filename: {ext}")
+            return ext
 
-    # Cloudinary serves raw files as application/octet-stream.
-    # Fall back to reading the extension directly from the URL.
-    if url:
-        url_ext = Path(url.split("?")[0]).suffix.lower()
-        if url_ext in GEMINI_SUPPORTED or url_ext in TEXT_EXTRACTABLE:
-            print(f"Extension resolved from URL path: {url_ext}")
-            return url_ext
+    # 2. Content-Type header
+    ct = content_type.lower()
+    ct_map = {
+        "pdf": ".pdf",
+        "png": ".png",
+        "jpeg": ".jpg", "jpg": ".jpg",
+        "webp": ".webp",
+        "gif": ".gif",
+        "tiff": ".tiff",
+        "bmp": ".bmp",
+        "wordprocessingml": ".docx", "msword": ".docx",
+        "spreadsheetml": ".xlsx", "ms-excel": ".xlsx",
+        "presentationml": ".pptx", "powerpoint": ".pptx",
+        "text/plain": ".txt",
+        "text/csv": ".csv",
+    }
+    for keyword, ext in ct_map.items():
+        if keyword in ct:
+            print(f"Extension from Content-Type '{content_type}': {ext}")
+            return ext
+
+    # 3. URL path suffix
+    url_ext = Path(file_url.split("?")[0]).suffix.lower()
+    if url_ext in GEMINI_SUPPORTED or url_ext in TEXT_EXTRACTABLE:
+        print(f"Extension from URL path: {url_ext}")
+        return url_ext
 
     return None
 
@@ -186,7 +187,7 @@ def _send_text_to_gemini(text: str) -> str:
     return response.text
 
 
-def process_document_with_ai(file_url: str) -> dict:
+def process_document_with_ai(file_url: str, original_filename: str | None = None) -> dict:
     try:
         print(f"Downloading: {file_url}")
         resp = requests.get(file_url, timeout=30)
@@ -194,32 +195,23 @@ def process_document_with_ai(file_url: str) -> dict:
         file_bytes = resp.content
         content_type = resp.headers.get("Content-Type", "")
 
-        url_clean = file_url.split("?")[0]
-        ext = Path(url_clean).suffix.lower()
+        ext = _resolve_ext(file_url, content_type, original_filename)
 
-        # If no extension found in URL (common with Cloudinary raw uploads),
-        # try Content-Type header first, then fall back to URL path inspection.
-        if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
-            ext = _detect_ext_from_content_type(content_type, url=file_url)
-            if ext:
-                print(f"Extension resolved to '{ext}' from Content-Type/URL")
-            else:
-                print(
-                    f"Unknown Content-Type '{content_type}' — attempting plain text read")
-                try:
-                    raw_text = file_bytes.decode(
-                        "utf-8", errors="ignore").strip()
-                    if raw_text:
-                        response_text = _send_text_to_gemini(raw_text)
-                        return _parse_response(response_text)
-                except Exception:
-                    pass
-                return {
-                    "ocr_text": "",
-                    "ai_summary": "Could not determine file type. Please upload a PDF, image, Word, or Excel file.",
-                    "ai_summary_es": "No se pudo determinar el tipo de archivo. Suba un PDF, imagen, Word o Excel.",
-                    "action_items": [],
-                }
+        if not ext:
+            print(f"Could not resolve extension — attempting UTF-8 plain text read")
+            try:
+                raw_text = file_bytes.decode("utf-8", errors="ignore").strip()
+                if raw_text:
+                    response_text = _send_text_to_gemini(raw_text)
+                    return _parse_response(response_text)
+            except Exception:
+                pass
+            return {
+                "ocr_text": "",
+                "ai_summary": "Could not determine file type. Please upload a PDF, image, Word, or Excel file.",
+                "ai_summary_es": "No se pudo determinar el tipo de archivo. Suba un PDF, imagen, Word o Excel.",
+                "action_items": [],
+            }
 
         print(f"Processing as '{ext}'...")
 
@@ -231,7 +223,7 @@ def process_document_with_ai(file_url: str) -> dict:
             if not extracted.strip():
                 return {
                     "ocr_text": "",
-                    "ai_summary": "Could not extract text. Please convert to PDF and re-upload.",
+                    "ai_summary": "Could not extract text from this file. Please convert to PDF and re-upload.",
                     "ai_summary_es": "No se pudo extraer texto. Por favor convierta a PDF.",
                     "action_items": [],
                 }
@@ -250,7 +242,7 @@ def process_document_with_ai(file_url: str) -> dict:
             "action_items": [],
         }
     except Exception as e:
-        print(f"Gemini error: {type(e).__name__}: {e}")
+        print(f"AI processing error: {type(e).__name__}: {e}")
         return {
             "ocr_text": f"Error: {type(e).__name__}: {str(e)[:300]}",
             "ai_summary": "Summary unavailable at this moment.",

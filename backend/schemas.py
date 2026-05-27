@@ -32,6 +32,7 @@ class DocumentCreate(BaseModel):
     file_url: str
     category: str | None = None
     is_emergency: bool = False
+    original_filename: str | None = None
 
 
 class DocumentResponse(BaseModel):

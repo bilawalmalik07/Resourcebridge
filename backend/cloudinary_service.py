@@ -1,4 +1,5 @@
 import os
+import re
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
@@ -17,22 +18,23 @@ def upload_file_to_cloudinary(file_bytes: bytes, filename: str, folder: str = "r
     """
     Uploads file bytes to Cloudinary and returns a publicly accessible URL.
 
-    Key behavior:
-    - Images (png/jpg/etc): resource_type='image', URL has no extension needed
-    - Everything else (pdf, docx, xlsx...): resource_type='raw'
-      Cloudinary raw URLs look like: .../raw/upload/v.../folder/filename.docx
-      The extension IS in the URL when use_filename=True — ai_service reads it from there.
+    For raw files (docx, pdf, xlsx, etc.), we set public_id explicitly using
+    a sanitized version of the original filename so the extension is preserved
+    in the returned URL. Without this, Cloudinary strips the extension and
+    ai_service cannot detect the file type.
     """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     image_exts = {"png", "jpg", "jpeg", "gif",
                   "webp", "heic", "heif", "tiff", "tif", "bmp"}
     resource_type = "image" if ext in image_exts else "raw"
 
+    safe_name = re.sub(r"[^\w.\-]", "_", filename)
+
     result = cloudinary.uploader.upload(
         file_bytes,
         folder=folder,
+        public_id=safe_name,
         resource_type=resource_type,
-        use_filename=True,
         unique_filename=True,
         overwrite=False,
     )

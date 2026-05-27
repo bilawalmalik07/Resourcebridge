@@ -67,6 +67,7 @@ export default function Dashboard({ onLogout }) {
       const docRes = await API.post('/api/documents', {
         title,
         file_url: uploadRes.data.file_url,
+        original_filename: uploadRes.data.original_filename,  // tells backend the real file type
         category,
         is_emergency: isEmergency,
       });
