@@ -1,5 +1,4 @@
 import os
-import re
 import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
@@ -16,26 +15,28 @@ cloudinary.config(
 
 def upload_file_to_cloudinary(file_bytes: bytes, filename: str, folder: str = "resourcebridge") -> str:
     """
-    Uploads a file's raw bytes to Cloudinary and returns the secure public URL.
-    Files are stored under the 'resourcebridge' folder organized by user.
-    The original filename (including extension) is preserved in the public_id
-    so that the returned URL retains the extension — critical for ai_service.py
-    to correctly detect the file type (e.g. .docx, .xlsx, .pptx).
+    Uploads file bytes to Cloudinary and returns a publicly accessible URL.
+
+    Key behavior:
+    - Images (png/jpg/etc): resource_type='image', URL has no extension needed
+    - Everything else (pdf, docx, xlsx...): resource_type='raw'
+      Cloudinary raw URLs look like: .../raw/upload/v.../folder/filename.docx
+      The extension IS in the URL when use_filename=True — ai_service reads it from there.
     """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    resource_type = "image" if ext in (
-        "png", "jpg", "jpeg", "gif", "webp") else "raw"
-
-    # Sanitize filename: replace spaces/special chars but keep the extension
-    safe_name = re.sub(r"[^\w.\-]", "_", filename)
+    image_exts = {"png", "jpg", "jpeg", "gif",
+                  "webp", "heic", "heif", "tiff", "tif", "bmp"}
+    resource_type = "image" if ext in image_exts else "raw"
 
     result = cloudinary.uploader.upload(
         file_bytes,
         folder=folder,
-        public_id=safe_name,        # preserves .docx / .pdf / etc. in the URL
         resource_type=resource_type,
+        use_filename=True,
         unique_filename=True,
         overwrite=False,
     )
 
-    return result["secure_url"]
+    url = result["secure_url"]
+    print(f"Cloudinary upload complete → {url}")
+    return url
