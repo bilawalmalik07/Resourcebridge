@@ -62,8 +62,12 @@ Return EXACTLY in this format:
 """
 
 
-def _detect_ext_from_content_type(content_type: str) -> str | None:
-    """Map Content-Type header to file extension. Returns None if unknown/generic."""
+def _detect_ext_from_content_type(content_type: str, url: str = "") -> str | None:
+    """
+    Map Content-Type header to file extension.
+    Falls back to inspecting the URL path if Content-Type is generic (e.g. octet-stream).
+    Returns None if truly unknown.
+    """
     ct = content_type.lower()
     if "pdf" in ct:
         return ".pdf"
@@ -89,7 +93,15 @@ def _detect_ext_from_content_type(content_type: str) -> str | None:
         return ".txt"
     if "text/csv" in ct:
         return ".csv"
-    # octet-stream or anything else = truly unknown, return None
+
+    # Cloudinary serves raw files as application/octet-stream.
+    # Fall back to reading the extension directly from the URL.
+    if url:
+        url_ext = Path(url.split("?")[0]).suffix.lower()
+        if url_ext in GEMINI_SUPPORTED or url_ext in TEXT_EXTRACTABLE:
+            print(f"Extension resolved from URL path: {url_ext}")
+            return url_ext
+
     return None
 
 
@@ -185,12 +197,13 @@ def process_document_with_ai(file_url: str) -> dict:
         url_clean = file_url.split("?")[0]
         ext = Path(url_clean).suffix.lower()
 
+        # If no extension found in URL (common with Cloudinary raw uploads),
+        # try Content-Type header first, then fall back to URL path inspection.
         if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
-            ext = _detect_ext_from_content_type(content_type)
+            ext = _detect_ext_from_content_type(content_type, url=file_url)
             if ext:
-                print(f"Extension from Content-Type '{content_type}' → {ext}")
+                print(f"Extension resolved to '{ext}' from Content-Type/URL")
             else:
-
                 print(
                     f"Unknown Content-Type '{content_type}' — attempting plain text read")
                 try:
@@ -208,10 +221,12 @@ def process_document_with_ai(file_url: str) -> dict:
                     "action_items": [],
                 }
 
+        print(f"Processing as '{ext}'...")
+
         if ext in GEMINI_SUPPORTED:
             response_text = _send_file_to_gemini(file_bytes, ext)
         else:
-            print(f"Extracting text from {ext}...")
+            print(f"Extracting text from office format {ext}...")
             extracted = _extract_text_from_office(file_bytes, ext)
             if not extracted.strip():
                 return {
@@ -220,6 +235,8 @@ def process_document_with_ai(file_url: str) -> dict:
                     "ai_summary_es": "No se pudo extraer texto. Por favor convierta a PDF.",
                     "action_items": [],
                 }
+            print(
+                f"Extracted {len(extracted)} characters, sending to Gemini...")
             response_text = _send_text_to_gemini(extracted)
 
         return _parse_response(response_text)
