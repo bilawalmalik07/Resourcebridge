@@ -325,8 +325,112 @@ export default function Dashboard({ onLogout }) {
               )}
             </div>
 
-            {/* Detail Panel */}
-            <div className="lg:col-span-1">
+            {/* Detail Panel — bottom sheet on mobile/tablet, sidebar on desktop */}
+
+            {/* Mobile/Tablet: Bottom Sheet */}
+            {selectedDoc && (
+              <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+                {/* Backdrop */}
+                <div
+                  className="absolute inset-0 bg-black/40"
+                  onClick={() => setSelectedDoc(null)}
+                />
+                {/* Sheet */}
+                <div className="relative bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col">
+                  {/* Drag handle */}
+                  <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+                    <div className="w-10 h-1 bg-stone-300 rounded-full" />
+                  </div>
+                  {/* Panel Header */}
+                  <div className="px-5 pt-2 pb-4 border-b border-stone-100 bg-stone-50 flex-shrink-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-1.5 text-blue-600 mb-1">
+                          <Sparkles size={13} />
+                          <span className="text-xs font-bold uppercase tracking-wider">{t.aiSummary}</span>
+                        </div>
+                        <h3 className="font-bold text-stone-900 text-base leading-tight truncate">{selectedDoc.title}</h3>
+                        <p className="text-xs text-stone-400 mt-0.5">{getCategoryLabel(selectedDoc.category)}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedDoc(null)}
+                        className="text-stone-400 hover:text-stone-600 ml-2 flex-shrink-0"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <a
+                        href={selectedDoc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition"
+                      >
+                        <ExternalLink size={13} />
+                        <span>{t.viewOriginal}</span>
+                      </a>
+                      <button
+                        onClick={() => handleDelete(selectedDoc.id)}
+                        className="flex items-center space-x-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 transition"
+                      >
+                        <Trash2 size={13} />
+                        <span>{t.deleteDoc}</span>
+                      </button>
+                    </div>
+                  </div>
+                  {/* Scrollable content */}
+                  <div className="p-5 space-y-5 overflow-y-auto flex-1">
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <Globe size={13} />
+                        <span>{t.plainLanguage}</span>
+                      </h4>
+                      <p className="text-sm text-stone-700 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100">
+                        {getSummary(selectedDoc) || '—'}
+                      </p>
+                    </div>
+                    {selectedDoc.action_items && selectedDoc.action_items.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                          <CheckCircle size={13} />
+                          <span>{t.actionItems}</span>
+                        </h4>
+                        <div className="space-y-2">
+                          {selectedDoc.action_items.map((item, i) => (
+                            <div key={i} className={`p-3 rounded-xl border text-xs ${PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.low}`}>
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-semibold leading-snug">{item.task}</p>
+                                <span className="text-xs font-bold uppercase tracking-wide flex-shrink-0">
+                                  {t[`${item.priority}Priority`] || item.priority}
+                                </span>
+                              </div>
+                              {item.deadline && (
+                                <div className="flex items-center space-x-1 mt-1.5 opacity-80">
+                                  <Clock size={11} />
+                                  <span>{t.deadline}: {item.deadline}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <FileText size={13} />
+                        <span>{t.extractedText}</span>
+                      </h4>
+                      <pre className="text-xs text-stone-500 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+                        {selectedDoc.ocr_text || '—'}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop: Sidebar (unchanged) */}
+            <div className="hidden lg:block lg:col-span-1">
               {selectedDoc ? (
                 <div className="bg-white rounded-2xl border border-stone-200 shadow-sm sticky top-20 overflow-hidden">
                   {/* Panel Header */}
