@@ -31,6 +31,7 @@ export default function Dashboard({ onLogout }) {
   const [showUploadPanel, setShowUploadPanel] = useState(false);
   const [emergencyPacket, setEmergencyPacket] = useState(null);
   const [loadingPacket, setLoadingPacket] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // doc to confirm delete
   const fileInputRef = useRef();
 
   useEffect(() => { fetchDocuments(); }, [categoryFilter, emergencyOnly]);
@@ -84,12 +85,17 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
-  const handleDelete = async (docId) => {
-    if (!window.confirm('Delete this document?')) return;
+  const handleDelete = (doc) => {
+    setDeleteConfirm(doc);
+  };
+
+  const confirmDelete = async () => {
+    const doc = deleteConfirm;
+    setDeleteConfirm(null);
     try {
-      await API.delete(`/api/documents/${docId}`);
-      setDocuments(prev => prev.filter(d => d.id !== docId));
-      if (selectedDoc?.id === docId) setSelectedDoc(null);
+      await API.delete(`/api/documents/${doc.id}`);
+      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      if (selectedDoc?.id === doc.id) setSelectedDoc(null);
     } catch (err) {
       console.error('Error deleting document:', err);
     }
@@ -247,6 +253,38 @@ export default function Dashboard({ onLogout }) {
         </div>
       )}
 
+      {/* ── Delete Confirm Modal ── */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Trash2 size={18} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-stone-900 text-base">Delete document?</h3>
+                <p className="text-stone-500 text-sm mt-0.5 line-clamp-1">"{deleteConfirm.title}"</p>
+              </div>
+            </div>
+            <p className="text-sm text-stone-500 mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2.5 border border-stone-200 rounded-xl text-sm font-semibold text-stone-600 hover:bg-stone-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 py-6">
 
         {/* Tabs */}
@@ -383,7 +421,7 @@ export default function Dashboard({ onLogout }) {
                         <span>{t.viewOriginal}</span>
                       </a>
                       <button
-                        onClick={() => handleDelete(selectedDoc.id)}
+                        onClick={() => handleDelete(selectedDoc)}
                         className="flex items-center space-x-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 transition"
                       >
                         <Trash2 size={13} />
@@ -483,7 +521,7 @@ export default function Dashboard({ onLogout }) {
                         <span>{t.viewOriginal}</span>
                       </a>
                       <button
-                        onClick={() => handleDelete(selectedDoc.id)}
+                        onClick={() => handleDelete(selectedDoc)}
                         className="flex items-center space-x-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 transition"
                       >
                         <Trash2 size={13} />
