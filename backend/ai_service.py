@@ -2,8 +2,6 @@ import os
 import json
 import requests
 import tempfile
-import io
-import docx
 from pathlib import Path
 from google import genai
 from google.genai import types
@@ -65,6 +63,7 @@ Return EXACTLY in this format:
 
 
 def _detect_ext_from_content_type(content_type: str) -> str | None:
+    """Map Content-Type header to file extension. Returns None if unknown/generic."""
     ct = content_type.lower()
     if "pdf" in ct:
         return ".pdf"
@@ -72,6 +71,14 @@ def _detect_ext_from_content_type(content_type: str) -> str | None:
         return ".png"
     if "jpeg" in ct or "jpg" in ct:
         return ".jpg"
+    if "webp" in ct:
+        return ".webp"
+    if "gif" in ct:
+        return ".gif"
+    if "tiff" in ct:
+        return ".tiff"
+    if "bmp" in ct:
+        return ".bmp"
     if "wordprocessingml" in ct or "msword" in ct:
         return ".docx"
     if "spreadsheetml" in ct or "ms-excel" in ct:
@@ -80,17 +87,31 @@ def _detect_ext_from_content_type(content_type: str) -> str | None:
         return ".pptx"
     if "text/plain" in ct:
         return ".txt"
+    if "text/csv" in ct:
+        return ".csv"
+    # octet-stream or anything else = truly unknown, return None
     return None
 
 
 def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
-    try:
-        if ext in (".docx", ".doc"):
-            doc = docx.Document(io.BytesIO(file_bytes))
-            return "\n".join([para.text for para in doc.paragraphs])
+    if ext in (".docx", ".doc"):
+        try:
+            import mammoth
+            import io
+            return mammoth.extract_raw_text(io.BytesIO(file_bytes)).value
+        except Exception:
+            pass
+        try:
+            from docx import Document
+            import io
+            return "\n".join(p.text for p in Document(io.BytesIO(file_bytes)).paragraphs)
+        except Exception:
+            return ""
 
-        elif ext in (".xlsx", ".xls"):
+    elif ext in (".xlsx", ".xls"):
+        try:
             import openpyxl
+            import io
             wb = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True)
             lines = []
             for sheet in wb.worksheets:
@@ -99,26 +120,44 @@ def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
                     lines.append(
                         "\t".join(str(c) if c is not None else "" for c in row))
             return "\n".join(lines)
+        except Exception:
+            return ""
 
-        elif ext in (".txt", ".csv", ".rtf"):
-            return file_bytes.decode("utf-8", errors="ignore")
-    except Exception:
-        return ""
+    elif ext in (".pptx", ".ppt"):
+        try:
+            from pptx import Presentation
+            import io
+            prs = Presentation(io.BytesIO(file_bytes))
+            lines = []
+            for i, slide in enumerate(prs.slides):
+                lines.append(f"[Slide {i+1}]")
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        lines.append(shape.text)
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
+    elif ext in (".txt", ".csv", ".rtf"):
+        return file_bytes.decode("utf-8", errors="ignore")
+
     return ""
 
 
 def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
+    """Upload file to Gemini Files API and get response text."""
     mime_type = GEMINI_SUPPORTED[ext]
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
         tmp.write(file_bytes)
         tmp_path = tmp.name
     try:
+        print(f"Uploading to Gemini Files API as {mime_type}...")
         uploaded = client.files.upload(
             file=tmp_path,
             config=types.UploadFileConfig(mime_type=mime_type)
         )
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=[uploaded, PROMPT]
         )
         return response.text
@@ -127,8 +166,9 @@ def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
 
 
 def _send_text_to_gemini(text: str) -> str:
+    """Send extracted plain text to Gemini."""
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=f"{PROMPT}\n\nDocument text:\n\n{text}"
     )
     return response.text
@@ -136,32 +176,87 @@ def _send_text_to_gemini(text: str) -> str:
 
 def process_document_with_ai(file_url: str) -> dict:
     try:
+        print(f"Downloading: {file_url}")
         resp = requests.get(file_url, timeout=30)
         resp.raise_for_status()
         file_bytes = resp.content
-        ext = Path(file_url.split("?")[0]).suffix.lower()
+        content_type = resp.headers.get("Content-Type", "")
+
+        url_clean = file_url.split("?")[0]
+        ext = Path(url_clean).suffix.lower()
+
+        if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
+            ext = _detect_ext_from_content_type(content_type)
+            if ext:
+                print(f"Extension from Content-Type '{content_type}' → {ext}")
+            else:
+
+                print(
+                    f"Unknown Content-Type '{content_type}' — attempting plain text read")
+                try:
+                    raw_text = file_bytes.decode(
+                        "utf-8", errors="ignore").strip()
+                    if raw_text:
+                        response_text = _send_text_to_gemini(raw_text)
+                        return _parse_response(response_text)
+                except Exception:
+                    pass
+                return {
+                    "ocr_text": "",
+                    "ai_summary": "Could not determine file type. Please upload a PDF, image, Word, or Excel file.",
+                    "ai_summary_es": "No se pudo determinar el tipo de archivo. Suba un PDF, imagen, Word o Excel.",
+                    "action_items": [],
+                }
 
         if ext in GEMINI_SUPPORTED:
             response_text = _send_file_to_gemini(file_bytes, ext)
         else:
+            print(f"Extracting text from {ext}...")
             extracted = _extract_text_from_office(file_bytes, ext)
+            if not extracted.strip():
+                return {
+                    "ocr_text": "",
+                    "ai_summary": "Could not extract text. Please convert to PDF and re-upload.",
+                    "ai_summary_es": "No se pudo extraer texto. Por favor convierta a PDF.",
+                    "action_items": [],
+                }
             response_text = _send_text_to_gemini(extracted)
 
         return _parse_response(response_text)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Download error: {e}")
+        return {
+            "ocr_text": "Failed to download the document.",
+            "ai_summary": "Could not reach the file. Please try again.",
+            "ai_summary_es": "No se pudo acceder al archivo.",
+            "action_items": [],
+        }
     except Exception as e:
-        return {"ocr_text": "", "ai_summary": "Error processing document.", "ai_summary_es": "Error al procesar.", "action_items": []}
+        print(f"Gemini error: {type(e).__name__}: {e}")
+        return {
+            "ocr_text": f"Error: {type(e).__name__}: {str(e)[:300]}",
+            "ai_summary": "Summary unavailable at this moment.",
+            "ai_summary_es": "Resumen no disponible en este momento.",
+            "action_items": [],
+        }
 
 
 def _parse_response(response_text: str) -> dict:
-    ocr_text = _extract_section(response_text, "OCR_TEXT", "SUMMARY_EN")
-    summary_en = _extract_section(response_text, "SUMMARY_EN", "SUMMARY_ES")
-    summary_es = _extract_section(response_text, "SUMMARY_ES", "ACTION_ITEMS")
+    ocr_text = _extract_section(response_text, "OCR_TEXT",    "SUMMARY_EN")
+    summary_en = _extract_section(response_text, "SUMMARY_EN",  "SUMMARY_ES")
+    summary_es = _extract_section(response_text, "SUMMARY_ES",  "ACTION_ITEMS")
     action_raw = _extract_section(response_text, "ACTION_ITEMS", None)
     try:
         action_items = json.loads(action_raw)
-    except:
+    except Exception:
         action_items = []
-    return {"ocr_text": ocr_text, "ai_summary": summary_en, "ai_summary_es": summary_es, "action_items": action_items}
+    return {
+        "ocr_text":      ocr_text or "Text extraction processed.",
+        "ai_summary":    summary_en or "Summary unavailable.",
+        "ai_summary_es": summary_es or "Resumen no disponible.",
+        "action_items":  action_items,
+    }
 
 
 def _extract_section(text: str, start_tag: str, end_tag: str | None) -> str:
@@ -172,5 +267,5 @@ def _extract_section(text: str, start_tag: str, end_tag: str | None) -> str:
             end_idx = text.index(f"---{end_tag}---")
             return text[start_idx:end_idx].strip()
         return text[start_idx:].strip()
-    except:
+    except ValueError:
         return ""
