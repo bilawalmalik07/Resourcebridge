@@ -8,7 +8,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True,
+                   nullable=True)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -24,10 +26,8 @@ class Document(Base):
     category = Column(String, index=True, nullable=True)
     ocr_text = Column(Text, nullable=True)
     ai_summary = Column(Text, nullable=True)
-    ai_summary_es = Column(Text, nullable=True)       # Spanish summary
-    # List of action items/reminders
+    ai_summary_es = Column(Text, nullable=True)
     action_items = Column(JSON, nullable=True)
-    # Flag for emergency packet
     is_emergency = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     owner_id = Column(Integer, ForeignKey("users.id"))

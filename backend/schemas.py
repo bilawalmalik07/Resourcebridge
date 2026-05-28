@@ -1,16 +1,19 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, Any
 
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    username: str
+    # optional contact email, no @ enforced on frontend
+    email: Optional[EmailStr] = None
     password: str
 
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    username: str
+    email: Optional[str] = None
     is_active: bool
     created_at: datetime
 
@@ -24,7 +27,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    email: str | None = None
+    username: str | None = None
 
 
 class EmergencyUpdate(BaseModel):
@@ -36,7 +39,6 @@ class DocumentCreate(BaseModel):
     file_url: str
     category: str | None = None
     is_emergency: bool = False
-    # NEW: passed from upload so ai_service knows the type
     original_filename: str | None = None
 
 

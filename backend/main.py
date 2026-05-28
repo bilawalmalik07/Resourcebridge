@@ -32,8 +32,6 @@ app.add_middleware(
 )
 
 
-# ─── Health ────────────────────────────────────────────────────────────────────
-
 @app.get("/api/health")
 def read_root():
     return {"status": "healthy", "project": "ResourceBridge"}
@@ -53,13 +51,21 @@ def test_database_connection(db: Session = Depends(get_db)):
 
 @app.post("/api/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(
-        models.User.email == user_in.email).first()
-    if existing:
+    # Check username is taken
+    if db.query(models.User).filter(models.User.username == user_in.username).first():
         raise HTTPException(
-            status_code=400, detail="Email is already registered.")
+            status_code=400, detail="Username is already taken.")
+    # Check email is taken (only if provided)
+    if user_in.email:
+        if db.query(models.User).filter(models.User.email == user_in.email).first():
+            raise HTTPException(
+                status_code=400, detail="Email is already registered.")
     hashed = security.get_password_hash(user_in.password)
-    user = models.User(email=user_in.email, hashed_password=hashed)
+    user = models.User(
+        username=user_in.username,
+        email=user_in.email or None,
+        hashed_password=hashed
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -68,15 +74,16 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/api/login", response_model=schemas.Token)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # form_data.username holds whatever the user typed in the username field
     user = db.query(models.User).filter(
-        models.User.email == form_data.username).first()
+        models.User.username == form_data.username).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = security.create_access_token(data={"sub": user.email})
+    token = security.create_access_token(data={"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -88,35 +95,26 @@ async def upload_file(
     current_user: models.User = Depends(security.get_current_user)
 ):
     allowed_types = {
-        # Images
         "image/png", "image/jpeg", "image/jpg", "image/webp",
         "image/gif", "image/heic", "image/heif", "image/tiff", "image/bmp",
-        # PDF
         "application/pdf",
-        # Word
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        # Excel
         "application/vnd.ms-excel",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        # PowerPoint
         "application/vnd.ms-powerpoint",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        # Text / CSV
         "text/plain", "text/csv", "text/rtf",
-        # OpenDocument formats
         "application/vnd.oasis.opendocument.text",
         "application/vnd.oasis.opendocument.spreadsheet",
         "application/vnd.oasis.opendocument.presentation",
     }
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Unsupported file type.")
-
     file_bytes = await file.read()
     if len(file_bytes) > 20 * 1024 * 1024:
         raise HTTPException(
             status_code=400, detail="File too large. Maximum 20MB.")
-
     folder = f"resourcebridge/user_{current_user.id}"
     file_url = cloudinary_service.upload_file_to_cloudinary(
         file_bytes, file.filename or "document", folder=folder
@@ -133,7 +131,10 @@ def create_document(
     current_user: models.User = Depends(security.get_current_user)
 ):
     print(f"Processing: {doc_in.title}")
-    ai = ai_service.process_document_with_ai(doc_in.file_url)
+    ai = ai_service.process_document_with_ai(
+        doc_in.file_url,
+        original_filename=doc_in.original_filename
+    )
     doc = models.Document(
         title=doc_in.title,
         file_url=doc_in.file_url,
@@ -217,8 +218,6 @@ def delete_document(
     db.commit()
 
 
-# ─── Emergency Packet ──────────────────────────────────────────────────────────
-
 @app.get("/api/emergency-packet")
 def generate_emergency_packet(
     db: Session = Depends(get_db),
@@ -232,7 +231,7 @@ def generate_emergency_packet(
         raise HTTPException(
             status_code=404, detail="No emergency documents found.")
     return {
-        "owner_email": current_user.email,
+        "owner_username": current_user.username,
         "document_count": len(docs),
         "documents": [
             {
