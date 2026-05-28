@@ -59,6 +59,13 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     if ' ' in u:
         raise HTTPException(
             status_code=400, detail="Username cannot contain spaces.")
+    p = user_in.password
+    if len(p) < 8:
+        raise HTTPException(
+            status_code=400, detail='Password must be at least 8 characters.')
+    if ' ' in p:
+        raise HTTPException(
+            status_code=400, detail='Password cannot contain spaces.')
     if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|]', u):
         raise HTTPException(
             status_code=400, detail="Username must include at least one symbol (e.g. _ ! @).")

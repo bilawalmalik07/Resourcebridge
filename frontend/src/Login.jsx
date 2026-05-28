@@ -3,6 +3,12 @@ import API from './api';
 import { useLanguage } from './LanguageContext';
 import { FileText, Eye, EyeOff } from 'lucide-react';
 
+const validatePassword = (p) => {
+  if (p.length < 8) return 'Password must be at least 8 characters.';
+  if (/\s/.test(p)) return 'Password cannot contain spaces.';
+  return null;
+};
+
 const validateUsername = (u) => {
   if (u.length < 8) return 'Username must be at least 8 characters.';
   if (/\s/.test(u)) return 'Username cannot contain spaces.';
@@ -21,6 +27,7 @@ export default function Login({ setToken }) {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,6 +37,8 @@ export default function Login({ setToken }) {
       if (isSignUp) {
         const uErr = validateUsername(username);
         if (uErr) { setUsernameError(uErr); setLoading(false); return; }
+        const pErr = validatePassword(password);
+        if (pErr) { setPasswordError(pErr); setLoading(false); return; }
         await API.post('/api/register', {
           username,
           email: email || undefined,
@@ -155,7 +164,7 @@ export default function Login({ setToken }) {
                   placeholder="Enter your password"
                   className="w-full px-4 py-3 pr-11 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={e => { setPassword(e.target.value); if (isSignUp) setPasswordError(''); }}
                 />
                 <button
                   type="button"
@@ -166,6 +175,11 @@ export default function Login({ setToken }) {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {isSignUp && (
+                <p className={`text-xs mt-1.5 font-medium ${passwordError ? 'text-red-500' : 'text-stone-400'}`}>
+                  {passwordError || 'Min 8 characters · no spaces'}
+                </p>
+              )}
             </div>
 
             <button
@@ -181,7 +195,7 @@ export default function Login({ setToken }) {
 
           <div className="mt-5 text-center">
             <button
-              onClick={() => { setIsSignUp(!isSignUp); setError(''); setEmail(''); setUsernameError(''); }}
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); setEmail(''); setUsernameError(''); setPasswordError(''); }}
               className="text-sm text-blue-600 hover:underline cursor-pointer"
             >
               {isSignUp ? t.switchToSignIn : t.switchToSignUp}
