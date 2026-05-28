@@ -12,11 +12,11 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-logout when the backend returns 401 (expired or invalid token)
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRoute = error.config?.url?.includes('/api/login');
+    if (error.response?.status === 401 && !isLoginRoute) {
       localStorage.removeItem('token');
       window.location.href = '/';
     }

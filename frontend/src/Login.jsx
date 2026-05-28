@@ -21,7 +21,7 @@ export default function Login({ setToken }) {
       if (isSignUp) {
         await API.post('/api/register', {
           username,
-          email: email || undefined,   // only send if filled in
+          email: email,
           password,
         });
         setIsSignUp(false);
@@ -83,11 +83,14 @@ export default function Login({ setToken }) {
               <input
                 type="text"
                 required
-                placeholder="Choose a username"
+                placeholder={isSignUp ? "Choose a username" : "Enter your username"}
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
               />
+              {!isSignUp && (
+                <p className="text-xs text-stone-400 mt-1.5">Use your username, not your email address.</p>
+              )}
             </div>
 
             {/* Email — only shown on sign up, fully optional */}
@@ -95,10 +98,10 @@ export default function Login({ setToken }) {
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-1.5">
                   Email Address
-                  <span className="ml-1.5 text-xs font-normal text-stone-400">(optional)</span>
                 </label>
                 <input
                   type="email"
+                  required
                   placeholder="your@email.com"
                   className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
                   value={email}

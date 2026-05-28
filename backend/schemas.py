@@ -5,7 +5,6 @@ from typing import Optional, Any
 
 class UserCreate(BaseModel):
     username: str
-    # optional contact email, no @ enforced on frontend
     email: Optional[EmailStr] = None
     password: str
 
