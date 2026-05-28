@@ -12,6 +12,7 @@ export default function Login({ setToken }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,11 +22,11 @@ export default function Login({ setToken }) {
       if (isSignUp) {
         await API.post('/api/register', {
           username,
-          email: email,
+          email: email || undefined,   // only send if filled in
           password,
         });
         setIsSignUp(false);
-        alert(t.accountCreated);
+        setSuccessMsg(t.accountCreated);
       } else {
         const params = new URLSearchParams();
         params.append('username', username);
@@ -43,6 +44,25 @@ export default function Login({ setToken }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+
+      {/* ── Success Modal ── */}
+      {successMsg && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100 text-center">
+            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText size={22} className="text-blue-700" />
+            </div>
+            <h3 className="font-bold text-stone-900 text-lg mb-2">Account Created!</h3>
+            <p className="text-stone-500 text-sm mb-6">{successMsg}</p>
+            <button
+              onClick={() => setSuccessMsg('')}
+              className="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition shadow-sm text-sm"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      )}
       <div className="max-w-md w-full">
 
         {/* Logo */}
@@ -83,14 +103,11 @@ export default function Login({ setToken }) {
               <input
                 type="text"
                 required
-                placeholder={isSignUp ? "Choose a username" : "Enter your username"}
+                placeholder="Choose a username"
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
               />
-              {!isSignUp && (
-                <p className="text-xs text-stone-400 mt-1.5">Use your username, not your email address.</p>
-              )}
             </div>
 
             {/* Email — only shown on sign up, fully optional */}
@@ -98,10 +115,10 @@ export default function Login({ setToken }) {
               <div>
                 <label className="block text-sm font-semibold text-stone-700 mb-1.5">
                   Email Address
+                  <span className="ml-1.5 text-xs font-normal text-stone-400">(optional)</span>
                 </label>
                 <input
                   type="email"
-                  required
                   placeholder="your@email.com"
                   className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
                   value={email}
