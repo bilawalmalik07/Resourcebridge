@@ -8,6 +8,17 @@ import {
   ListTodo, Bell, Plus, Circle, CircleCheck, BellRing
 } from 'lucide-react';
 
+// Decode username from JWT so localStorage is scoped per user
+const getUserKey = (key) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return key;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const user = payload.sub || 'guest';
+    return `${user}:${key}`;
+  } catch { return key; }
+};
+
 const CATEGORIES = ['immigration', 'school', 'housing', 'employment', 'healthcare', 'benefits', 'emergency', 'Uncategorized'];
 
 const PRIORITY_STYLES = {
@@ -37,13 +48,13 @@ export default function Dashboard({ onLogout }) {
   // ── To-Do List ──
   const [showTodo, setShowTodo] = useState(false);
   const [todos, setTodos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rb_todos') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(getUserKey('rb_todos')) || '[]'); } catch { return []; }
   });
   const [todoInput, setTodoInput] = useState('');
 
   const saveTodos = (updated) => {
     setTodos(updated);
-    localStorage.setItem('rb_todos', JSON.stringify(updated));
+    localStorage.setItem(getUserKey('rb_todos'), JSON.stringify(updated));
   };
   const addTodo = () => {
     const text = todoInput.trim();
@@ -57,7 +68,7 @@ export default function Dashboard({ onLogout }) {
   // ── Reminders ──
   const [showReminders, setShowReminders] = useState(false);
   const [reminders, setReminders] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('rb_reminders') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(getUserKey('rb_reminders')) || '[]'); } catch { return []; }
   });
   const [reminderText, setReminderText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
@@ -65,7 +76,7 @@ export default function Dashboard({ onLogout }) {
 
   const saveReminders = (updated) => {
     setReminders(updated);
-    localStorage.setItem('rb_reminders', JSON.stringify(updated));
+    localStorage.setItem(getUserKey('rb_reminders'), JSON.stringify(updated));
   };
   const addReminder = () => {
     const text = reminderText.trim();
