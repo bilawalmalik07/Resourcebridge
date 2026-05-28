@@ -4,7 +4,8 @@ import { useLanguage } from './LanguageContext';
 import {
   FileText, Search, Upload, LogOut, Globe, Sparkles,
   AlertTriangle, Trash2, ExternalLink, CheckCircle,
-  Clock, ChevronDown, X, Printer, Shield, ShieldOff
+  Clock, ChevronDown, X, Printer, Shield, ShieldOff,
+  ListTodo, Bell, Plus, Circle, CircleCheck, BellRing
 } from 'lucide-react';
 
 const CATEGORIES = ['immigration', 'school', 'housing', 'employment', 'healthcare', 'benefits', 'emergency', 'Uncategorized'];
@@ -32,6 +33,54 @@ export default function Dashboard({ onLogout }) {
   const [emergencyPacket, setEmergencyPacket] = useState(null);
   const [loadingPacket, setLoadingPacket] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // doc to confirm delete
+
+  // ── To-Do List ──
+  const [showTodo, setShowTodo] = useState(false);
+  const [todos, setTodos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rb_todos') || '[]'); } catch { return []; }
+  });
+  const [todoInput, setTodoInput] = useState('');
+
+  const saveTodos = (updated) => {
+    setTodos(updated);
+    localStorage.setItem('rb_todos', JSON.stringify(updated));
+  };
+  const addTodo = () => {
+    const text = todoInput.trim();
+    if (!text) return;
+    saveTodos([{ id: Date.now(), text, done: false }, ...todos]);
+    setTodoInput('');
+  };
+  const toggleTodo = (id) => saveTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  const deleteTodo = (id) => saveTodos(todos.filter(t => t.id !== id));
+
+  // ── Reminders ──
+  const [showReminders, setShowReminders] = useState(false);
+  const [reminders, setReminders] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rb_reminders') || '[]'); } catch { return []; }
+  });
+  const [reminderText, setReminderText] = useState('');
+  const [reminderDate, setReminderDate] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
+
+  const saveReminders = (updated) => {
+    setReminders(updated);
+    localStorage.setItem('rb_reminders', JSON.stringify(updated));
+  };
+  const addReminder = () => {
+    const text = reminderText.trim();
+    if (!text || !reminderDate) return;
+    saveReminders([{ id: Date.now(), text, date: reminderDate, time: reminderTime }, ...reminders]);
+    setReminderText(''); setReminderDate(''); setReminderTime('');
+  };
+  const deleteReminder = (id) => saveReminders(reminders.filter(r => r.id !== id));
+  const formatReminderDate = (date, time) => {
+    const d = new Date(`${date}T${time || '00:00'}`);
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) +
+      (time ? ` · ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : '');
+  };
+  const isOverdue = (date, time) => new Date(`${date}T${time || '23:59'}`) < new Date();
+
   const fileInputRef = useRef();
 
   useEffect(() => { fetchDocuments(); }, [categoryFilter, emergencyOnly]);
@@ -163,11 +212,57 @@ export default function Dashboard({ onLogout }) {
             {t.language}
           </button>
           <button
+            onClick={() => setShowTodo(true)}
+            className="hidden sm:flex items-center space-x-1.5 bg-white text-stone-700 border border-stone-200 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 transition shadow-sm relative"
+          >
+            <ListTodo size={15} />
+            <span>To-Do</span>
+            {todos.filter(t => !t.done).length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {todos.filter(t => !t.done).length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setShowReminders(true)}
+            className="hidden sm:flex items-center space-x-1.5 bg-white text-stone-700 border border-stone-200 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 transition shadow-sm relative"
+          >
+            <Bell size={15} />
+            <span>Reminders</span>
+            {reminders.filter(r => !isOverdue(r.date, r.time) === false || true).length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {reminders.length}
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setShowUploadPanel(true)}
             className="hidden sm:flex items-center space-x-1.5 bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-800 transition shadow-sm"
           >
             <Upload size={15} />
             <span>{t.uploadDocument}</span>
+          </button>
+          <button
+            onClick={() => setShowTodo(true)}
+            className="sm:hidden relative flex items-center justify-center text-stone-500 hover:text-blue-700 transition px-2 py-2 rounded-lg hover:bg-stone-100"
+          >
+            <ListTodo size={18} />
+            {todos.filter(t => !t.done).length > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-blue-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                {todos.filter(t => !t.done).length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setShowReminders(true)}
+            className="sm:hidden relative flex items-center justify-center text-stone-500 hover:text-amber-600 transition px-2 py-2 rounded-lg hover:bg-stone-100"
+          >
+            <Bell size={18} />
+            {reminders.length > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-amber-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                {reminders.length}
+              </span>
+            )}
           </button>
           <button
             onClick={onLogout}
@@ -280,6 +375,175 @@ export default function Dashboard({ onLogout }) {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── To-Do List Modal ── */}
+      {showTodo && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowTodo(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <ListTodo size={18} className="text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">To-Do List</h3>
+                  <p className="text-xs text-stone-400">{todos.filter(t => !t.done).length} remaining</p>
+                </div>
+              </div>
+              <button onClick={() => setShowTodo(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition"><X size={18} /></button>
+            </div>
+            {/* Add input */}
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a new task..."
+                  className="flex-1 px-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  value={todoInput}
+                  onChange={e => setTodoInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addTodo()}
+                />
+                <button
+                  onClick={addTodo}
+                  disabled={!todoInput.trim()}
+                  className="px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-sm font-semibold transition disabled:opacity-40 flex items-center space-x-1"
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+            </div>
+            {/* List */}
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-2">
+              {todos.length === 0 && (
+                <div className="text-center py-10 text-stone-400">
+                  <ListTodo size={36} className="mx-auto mb-2 text-stone-200" />
+                  <p className="text-sm font-medium">No tasks yet</p>
+                  <p className="text-xs mt-1">Add something above to get started</p>
+                </div>
+              )}
+              {/* Pending */}
+              {todos.filter(t => !t.done).map(todo => (
+                <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 hover:border-blue-100 hover:bg-blue-50/30 group transition">
+                  <button onClick={() => toggleTodo(todo.id)} className="flex-shrink-0 text-stone-300 hover:text-blue-600 transition">
+                    <Circle size={18} />
+                  </button>
+                  <span className="flex-1 text-sm text-stone-700">{todo.text}</span>
+                  <button onClick={() => deleteTodo(todo.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              {/* Done */}
+              {todos.filter(t => t.done).length > 0 && (
+                <>
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-wider pt-2 pb-1">Completed</p>
+                  {todos.filter(t => t.done).map(todo => (
+                    <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 group opacity-60">
+                      <button onClick={() => toggleTodo(todo.id)} className="flex-shrink-0 text-emerald-500 hover:text-stone-400 transition">
+                        <CircleCheck size={18} />
+                      </button>
+                      <span className="flex-1 text-sm text-stone-500 line-through">{todo.text}</span>
+                      <button onClick={() => deleteTodo(todo.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+            {todos.filter(t => t.done).length > 0 && (
+              <div className="px-6 py-3 border-t border-stone-100">
+                <button onClick={() => saveTodos(todos.filter(t => !t.done))} className="text-xs text-stone-400 hover:text-red-500 transition font-medium">
+                  Clear completed
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Reminders Modal ── */}
+      {showReminders && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowReminders(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
+                  <BellRing size={18} className="text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-stone-900 text-base">Reminders</h3>
+                  <p className="text-xs text-stone-400">{reminders.length} reminder{reminders.length !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowReminders(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition"><X size={18} /></button>
+            </div>
+            {/* Add form */}
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50 space-y-3">
+              <input
+                type="text"
+                placeholder="What do you need to remember?"
+                className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white"
+                value={reminderText}
+                onChange={e => setReminderText(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  className="flex-1 px-3 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white text-stone-600"
+                  value={reminderDate}
+                  onChange={e => setReminderDate(e.target.value)}
+                />
+                <input
+                  type="time"
+                  className="flex-1 px-3 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white text-stone-600"
+                  value={reminderTime}
+                  onChange={e => setReminderTime(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={addReminder}
+                disabled={!reminderText.trim() || !reminderDate}
+                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition disabled:opacity-40 flex items-center justify-center space-x-2"
+              >
+                <Plus size={15} />
+                <span>Add Reminder</span>
+              </button>
+            </div>
+            {/* List */}
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-2">
+              {reminders.length === 0 && (
+                <div className="text-center py-10 text-stone-400">
+                  <Bell size={36} className="mx-auto mb-2 text-stone-200" />
+                  <p className="text-sm font-medium">No reminders yet</p>
+                  <p className="text-xs mt-1">Set a date and time above</p>
+                </div>
+              )}
+              {[...reminders].sort((a, b) => new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`)).map(r => {
+                const overdue = isOverdue(r.date, r.time);
+                return (
+                  <div key={r.id} className={`flex items-start gap-3 p-3.5 rounded-xl border group transition ${overdue ? 'border-red-100 bg-red-50/40' : 'border-stone-100 hover:border-amber-100 hover:bg-amber-50/30'}`}>
+                    <div className={`mt-0.5 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${overdue ? 'bg-red-100' : 'bg-amber-50'}`}>
+                      <Bell size={13} className={overdue ? 'text-red-500' : 'text-amber-500'} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-stone-800 font-medium leading-snug">{r.text}</p>
+                      <p className={`text-xs mt-0.5 font-medium ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
+                        {overdue && '⚠ Overdue · '}{formatReminderDate(r.date, r.time)}
+                      </p>
+                    </div>
+                    <button onClick={() => deleteReminder(r.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0 mt-0.5">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
