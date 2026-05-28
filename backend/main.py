@@ -51,6 +51,17 @@ def test_database_connection(db: Session = Depends(get_db)):
 
 @app.post("/api/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+    import re
+    u = user_in.username
+    if len(u) < 8:
+        raise HTTPException(
+            status_code=400, detail="Username must be at least 8 characters.")
+    if ' ' in u:
+        raise HTTPException(
+            status_code=400, detail="Username cannot contain spaces.")
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|]', u):
+        raise HTTPException(
+            status_code=400, detail="Username must include at least one symbol (e.g. _ ! @).")
     # Check username is taken
     if db.query(models.User).filter(models.User.username == user_in.username).first():
         raise HTTPException(

@@ -3,6 +3,13 @@ import API from './api';
 import { useLanguage } from './LanguageContext';
 import { FileText, Eye, EyeOff } from 'lucide-react';
 
+const validateUsername = (u) => {
+  if (u.length < 8) return 'Username must be at least 8 characters.';
+  if (/\s/.test(u)) return 'Username cannot contain spaces.';
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(u)) return 'Username must include at least one symbol (e.g. _ ! @).';
+  return null;
+};
+
 export default function Login({ setToken }) {
   const { t, toggle } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -13,6 +20,7 @@ export default function Login({ setToken }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [usernameError, setUsernameError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,9 +28,11 @@ export default function Login({ setToken }) {
     setLoading(true);
     try {
       if (isSignUp) {
+        const uErr = validateUsername(username);
+        if (uErr) { setUsernameError(uErr); setLoading(false); return; }
         await API.post('/api/register', {
           username,
-          email: email || undefined,   // only send if filled in
+          email: email || undefined,
           password,
         });
         setIsSignUp(false);
@@ -63,6 +73,7 @@ export default function Login({ setToken }) {
           </div>
         </div>
       )}
+
       <div className="max-w-md w-full">
 
         {/* Logo */}
@@ -106,8 +117,13 @@ export default function Login({ setToken }) {
                 placeholder="Choose a username"
                 className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={e => { setUsername(e.target.value); if (isSignUp) setUsernameError(''); }}
               />
+              {isSignUp && (
+                <p className={`text-xs mt-1.5 font-medium ${usernameError ? 'text-red-500' : 'text-stone-400'}`}>
+                  {usernameError || 'Min 8 chars · no spaces · include a symbol (e.g. _ ! @)'}
+                </p>
+              )}
             </div>
 
             {/* Email — only shown on sign up, fully optional */}
@@ -165,7 +181,7 @@ export default function Login({ setToken }) {
 
           <div className="mt-5 text-center">
             <button
-              onClick={() => { setIsSignUp(!isSignUp); setError(''); setEmail(''); }}
+              onClick={() => { setIsSignUp(!isSignUp); setError(''); setEmail(''); setUsernameError(''); }}
               className="text-sm text-blue-600 hover:underline cursor-pointer"
             >
               {isSignUp ? t.switchToSignIn : t.switchToSignUp}
