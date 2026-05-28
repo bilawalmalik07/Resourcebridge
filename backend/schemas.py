@@ -61,3 +61,8 @@ class DocumentResponse(BaseModel):
 class UploadResponse(BaseModel):
     file_url: str
     original_filename: str
+
+
+class VerifyCode(BaseModel):
+    email: EmailStr
+    code: str

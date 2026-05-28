@@ -1,3 +1,4 @@
+import time
 import os
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,7 @@ from sqlalchemy import text
 from dotenv import load_dotenv
 import ai_service
 import cloudinary_service
+import email_service
 import models
 import schemas
 import security
@@ -17,6 +19,11 @@ from database import engine, get_db
 load_dotenv()
 
 models.Base.metadata.create_all(bind=engine)
+
+# Temporary store for pending email verifications
+# { email: { code, expires_at, username, password_hash } }
+_pending: dict = {}
+CODE_TTL = 600  # 10 minutes
 
 app = FastAPI(title="ResourceBridge API")
 
@@ -49,26 +56,82 @@ def test_database_connection(db: Session = Depends(get_db)):
 
 # ─── Auth ──────────────────────────────────────────────────────────────────────
 
-@app.post("/api/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post("/api/send-verification")
+def send_verification(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+    """Step 1: validate, generate code, email it. Does NOT create the account yet."""
     import re
     u = user_in.username
     if len(u) < 8:
         raise HTTPException(
             status_code=400, detail="Username must be at least 8 characters.")
-    if ' ' in u:
+    if " " in u:
         raise HTTPException(
             status_code=400, detail="Username cannot contain spaces.")
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|]', u):
+        raise HTTPException(
+            status_code=400, detail="Username must include at least one symbol.")
     p = user_in.password
     if len(p) < 8:
         raise HTTPException(
-            status_code=400, detail='Password must be at least 8 characters.')
-    if ' ' in p:
+            status_code=400, detail="Password must be at least 8 characters.")
+    if " " in p:
         raise HTTPException(
-            status_code=400, detail='Password cannot contain spaces.')
-    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|]', u):
+            status_code=400, detail="Password cannot contain spaces.")
+    if not user_in.email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+    if db.query(models.User).filter(models.User.username == user_in.username).first():
         raise HTTPException(
-            status_code=400, detail="Username must include at least one symbol (e.g. _ ! @).")
+            status_code=400, detail="Username is already taken.")
+    if db.query(models.User).filter(models.User.email == user_in.email).first():
+        raise HTTPException(
+            status_code=400, detail="Email is already registered.")
+
+    code = email_service.generate_code()
+    hashed = security.get_password_hash(user_in.password)
+    _pending[user_in.email] = {
+        "code": code,
+        "expires_at": time.time() + CODE_TTL,
+        "username": user_in.username,
+        "hashed_password": hashed,
+    }
+    sent = email_service.send_verification_email(
+        user_in.email, code, user_in.username)
+    if not sent:
+        raise HTTPException(
+            status_code=500, detail="Failed to send verification email. Check SMTP settings.")
+    return {"message": "Verification code sent. Check your email."}
+
+
+@app.post("/api/verify-and-register", response_model=schemas.UserResponse, status_code=201)
+def verify_and_register(payload: schemas.VerifyCode, db: Session = Depends(get_db)):
+    """Step 2: confirm the code and actually create the account."""
+    entry = _pending.get(payload.email)
+    if not entry:
+        raise HTTPException(
+            status_code=400, detail="No pending verification for this email.")
+    if time.time() > entry["expires_at"]:
+        del _pending[payload.email]
+        raise HTTPException(
+            status_code=400, detail="Code expired. Please sign up again.")
+    if entry["code"] != payload.code.strip():
+        raise HTTPException(
+            status_code=400, detail="Incorrect code. Please try again.")
+
+    # Create the user
+    user = models.User(
+        username=entry["username"],
+        email=payload.email,
+        hashed_password=entry["hashed_password"],
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    del _pending[payload.email]
+    return user
+
+
+@app.post("/api/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     # Check username is taken
     if db.query(models.User).filter(models.User.username == user_in.username).first():
         raise HTTPException(

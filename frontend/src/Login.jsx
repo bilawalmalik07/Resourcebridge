@@ -28,6 +28,11 @@ export default function Login({ setToken }) {
   const [successMsg, setSuccessMsg] = useState('');
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [verifyStep, setVerifyStep] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [codeInput, setCodeInput] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,13 +44,9 @@ export default function Login({ setToken }) {
         if (uErr) { setUsernameError(uErr); setLoading(false); return; }
         const pErr = validatePassword(password);
         if (pErr) { setPasswordError(pErr); setLoading(false); return; }
-        await API.post('/api/register', {
-          username,
-          email: email || undefined,
-          password,
-        });
-        setIsSignUp(false);
-        setSuccessMsg(t.accountCreated);
+        await API.post('/api/send-verification', { username, email, password });
+        setPendingEmail(email);
+        setVerifyStep(true);
       } else {
         const params = new URLSearchParams();
         params.append('username', username);
@@ -60,6 +61,75 @@ export default function Login({ setToken }) {
       setLoading(false);
     }
   };
+
+  const handleVerifyCode = async () => {
+    if (!codeInput.trim()) return;
+    setCodeLoading(true);
+    setCodeError('');
+    try {
+      await API.post('/api/verify-and-register', { email: pendingEmail, code: codeInput.trim() });
+      setVerifyStep(false);
+      setIsSignUp(false);
+      setCodeInput('');
+      setPendingEmail('');
+      setSuccessMsg(t.accountCreated);
+    } catch (err) {
+      setCodeError(err.response?.data?.detail || 'Invalid code. Please try again.');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  if (verifyStep) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-700 rounded-2xl mb-4 shadow-lg">
+              <FileText size={24} className="text-white" />
+            </div>
+            <h1 className="text-3xl font-black text-stone-900 tracking-tight">{t.appName}</h1>
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-stone-100">
+            <h2 className="text-xl font-bold text-stone-800 mb-1">Check your email</h2>
+            <p className="text-sm text-stone-500 mb-6">
+              We sent a 6-digit code to <span className="font-semibold text-stone-700">{pendingEmail}</span>. Enter it below to confirm your account.
+            </p>
+            {codeError && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-4 border border-red-100">{codeError}</div>
+            )}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-stone-700 mb-1.5">Verification Code</label>
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="000000"
+                className="w-full px-4 py-4 border-2 border-stone-200 rounded-xl focus:outline-none focus:border-blue-500 bg-stone-50 text-2xl font-bold text-center tracking-widest transition"
+                value={codeInput}
+                onChange={e => { setCodeInput(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleVerifyCode()}
+                autoFocus
+              />
+              <p className="text-xs text-stone-400 mt-1.5 text-center">Code expires in 10 minutes</p>
+            </div>
+            <button
+              onClick={handleVerifyCode}
+              disabled={codeLoading || codeInput.length !== 6}
+              className="w-full py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition shadow-md text-sm disabled:opacity-60"
+            >
+              {codeLoading ? 'Verifying...' : 'Confirm & Create Account'}
+            </button>
+            <button
+              onClick={() => { setVerifyStep(false); setCodeInput(''); setCodeError(''); }}
+              className="w-full mt-3 py-2 text-sm text-stone-400 hover:text-stone-600 transition"
+            >
+              ← Go back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
