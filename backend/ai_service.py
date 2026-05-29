@@ -189,11 +189,28 @@ def _send_text_to_gemini(text: str) -> str:
     return response.text
 
 
+def _download_with_retry(url: str, retries: int = 3, timeout: int = 60) -> requests.Response:
+    """Download a URL with retries and browser-like headers."""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; ResourceBridge/1.0)",
+        "Accept": "*/*",
+    }
+    last_exc = None
+    for attempt in range(1, retries + 1):
+        try:
+            print(f"Download attempt {attempt}: {url}")
+            resp = requests.get(url, headers=headers, timeout=timeout)
+            resp.raise_for_status()
+            return resp
+        except requests.exceptions.RequestException as e:
+            print(f"Attempt {attempt} failed: {type(e).__name__}: {e}")
+            last_exc = e
+    raise last_exc
+
+
 def process_document_with_ai(file_url: str, original_filename: str | None = None) -> dict:
     try:
-        print(f"Downloading: {file_url}")
-        resp = requests.get(file_url, timeout=30)
-        resp.raise_for_status()
+        resp = _download_with_retry(file_url)
         file_bytes = resp.content
         content_type = resp.headers.get("Content-Type", "")
 
@@ -237,9 +254,10 @@ def process_document_with_ai(file_url: str, original_filename: str | None = None
         return _parse_response(response_text)
 
     except requests.exceptions.RequestException as e:
-        print(f"Download error: {type(e).__name__}: {e}")
+        print(
+            f"Download FAILED after retries: {type(e).__name__}: {e} | URL: {file_url}")
         return {
-            "ocr_text": "Failed to download the document.",
+            "ocr_text": f"Download error: {type(e).__name__}: {str(e)[:300]}",
             "ai_summary": "Could not reach the file. Please try again.",
             "ai_summary_es": "No se pudo acceder al archivo.",
             "action_items": [],
