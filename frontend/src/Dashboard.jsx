@@ -146,6 +146,8 @@ export default function Dashboard({ onLogout }) {
       const docRes = await API.post('/api/documents', {
         title,
         file_url: uploadRes.data.file_url,
+        original_filename: uploadRes.data.original_filename,
+        ai_result: uploadRes.data.ai_result,
         category,
         is_emergency: isEmergency,
       });
