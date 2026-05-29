@@ -104,7 +104,7 @@ export default function Landing({ onGetStarted }) {
 
       {/* Footer */}
       <footer className="border-t border-stone-200 py-8 px-6 text-center text-stone-400 text-sm">
-        <p>© 2025 ResourceBridge — Civic Technology for Community Stability</p>
+        <p>© 2026 ResourceBridge — Technology for Community Stability</p>
       </footer>
     </div>
   );
