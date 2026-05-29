@@ -128,6 +128,16 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
+
+  const handleViewOriginal = async (doc) => {
+    try {
+      const res = await API.get(`/api/documents/${doc.id}/view-url`);
+      window.open(res.data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const handleFileUpload = async (e) => {
     e.preventDefault();
     const file = fileInputRef.current?.files?.[0];
@@ -146,8 +156,6 @@ export default function Dashboard({ onLogout }) {
       const docRes = await API.post('/api/documents', {
         title,
         file_url: uploadRes.data.file_url,
-        original_filename: uploadRes.data.original_filename,
-        ai_result: uploadRes.data.ai_result,
         category,
         is_emergency: isEmergency,
       });
@@ -801,15 +809,13 @@ export default function Dashboard({ onLogout }) {
                       </button>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <a
-                        href={selectedDoc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewOriginal(selectedDoc)}
                         className="flex items-center space-x-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition"
                       >
                         <ExternalLink size={13} />
                         <span>{t.viewOriginal}</span>
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleDelete(selectedDoc)}
                         className="flex items-center space-x-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 transition"
@@ -901,15 +907,13 @@ export default function Dashboard({ onLogout }) {
                     </div>
                     {/* Action buttons */}
                     <div className="flex gap-2 mt-4">
-                      <a
-                        href={selectedDoc.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => handleViewOriginal(selectedDoc)}
                         className="flex items-center space-x-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg hover:bg-blue-100 transition"
                       >
                         <ExternalLink size={13} />
                         <span>{t.viewOriginal}</span>
-                      </a>
+                      </button>
                       <button
                         onClick={() => handleDelete(selectedDoc)}
                         className="flex items-center space-x-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg hover:bg-red-100 transition"
@@ -1139,15 +1143,13 @@ export default function Dashboard({ onLogout }) {
                           <h3 className="font-bold text-stone-900">{doc.title}</h3>
                           <span className="text-xs text-stone-400">{getCategoryLabel(doc.category)} · {formatDate(doc.created_at)}</span>
                         </div>
-                        <a
-                          href={doc.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => handleViewOriginal(doc)}
                           className="text-xs text-blue-600 flex items-center space-x-1 hover:underline print:hidden"
                         >
                           <ExternalLink size={12} />
                           <span>{t.viewOriginal}</span>
-                        </a>
+                        </button>
                       </div>
                       <div className="text-sm text-stone-600 bg-stone-50 p-4 rounded-xl border border-stone-100 mb-3 leading-relaxed">
                         {lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary}
