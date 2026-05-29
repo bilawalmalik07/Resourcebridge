@@ -30,6 +30,7 @@ def upload_file_to_cloudinary(file_bytes: bytes, filename: str, folder: str = "r
         resource_type=resource_type,
         unique_filename=True,
         overwrite=False,
+        access_mode="public",
     )
 
     url = result["secure_url"]
