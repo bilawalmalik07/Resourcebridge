@@ -6,6 +6,7 @@ from pathlib import Path
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+import cloudinary_service
 
 load_dotenv()
 
@@ -210,7 +211,9 @@ def _download_with_retry(url: str, retries: int = 3, timeout: int = 60) -> reque
 
 def process_document_with_ai(file_url: str, original_filename: str | None = None) -> dict:
     try:
-        resp = _download_with_retry(file_url)
+        # Use a signed URL for Cloudinary raw resources to avoid 401 Unauthorized
+        download_url = cloudinary_service.get_signed_download_url(file_url)
+        resp = _download_with_retry(download_url)
         file_bytes = resp.content
         content_type = resp.headers.get("Content-Type", "")
 
