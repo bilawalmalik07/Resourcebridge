@@ -283,10 +283,13 @@ def create_reminder(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    from datetime import timezone as tz
+    from datetime import datetime, timezone as tz
     remind_at = r_in.remind_at
     if remind_at.tzinfo is None:
         remind_at = remind_at.replace(tzinfo=tz.utc)
+    if remind_at <= datetime.now(tz.utc):
+        raise HTTPException(
+            status_code=400, detail="Reminder time must be in the future.")
     reminder = models.Reminder(
         text=r_in.text,
         remind_at=remind_at,

@@ -82,7 +82,10 @@ export default function Dashboard({ onLogout }) {
   const addReminder = async () => {
     const text = reminderText.trim();
     if (!text || !reminderDate || !reminderTime) return;
-    const remind_at = `${reminderDate}T${reminderTime}:00`;
+    // Convert the user's local date+time to a UTC ISO string so the backend
+    // stores and fires the reminder at the correct moment regardless of server timezone.
+    const localDate = new Date(`${reminderDate}T${reminderTime}:00`);
+    const remind_at = localDate.toISOString();
     try {
       const res = await API.post('/api/reminders', { text, remind_at });
       setReminders(prev => [...prev, res.data]);
