@@ -43,7 +43,10 @@ export default function Dashboard({ onLogout }) {
   const [showUploadPanel, setShowUploadPanel] = useState(false);
   const [emergencyPacket, setEmergencyPacket] = useState(null);
   const [loadingPacket, setLoadingPacket] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // doc to confirm delete
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [emergencyDocs, setEmergencyDocs] = useState([]);
+  const [emergencyCategoryFilter, setEmergencyCategoryFilter] = useState('All');
+  const [selectedEmergencyIds, setSelectedEmergencyIds] = useState(new Set());
 
   // To-Do list state (persisted to localStorage per user)
   const [showTodo, setShowTodo] = useState(false);
@@ -109,6 +112,18 @@ export default function Dashboard({ onLogout }) {
 
   useEffect(() => { fetchDocuments(); }, [categoryFilter, emergencyOnly]);
   useEffect(() => { fetchReminders(); }, []);
+  useEffect(() => { if (activeTab === 'emergency') fetchEmergencyDocs(); }, [activeTab, emergencyCategoryFilter]);
+
+  const fetchEmergencyDocs = async () => {
+    try {
+      const params = new URLSearchParams();
+      params.append('emergency_only', 'true');
+      if (emergencyCategoryFilter !== 'All') params.append('category', emergencyCategoryFilter);
+      const res = await API.get(`/api/documents?${params}`);
+      setEmergencyDocs(res.data);
+      setSelectedEmergencyIds(new Set(res.data.map(d => d.id)));
+    } catch (err) { console.error('Error fetching emergency docs:', err); }
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -186,16 +201,25 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
-  const handleGeneratePacket = async () => {
-    setLoadingPacket(true);
-    try {
-      const res = await API.get('/api/emergency-packet');
-      setEmergencyPacket(res.data);
-    } catch (err) {
-      alert(err.response?.data?.detail || 'Error generating packet.');
-    } finally {
-      setLoadingPacket(false);
+  const handleGeneratePacket = () => {
+    const selected = emergencyDocs.filter(d => selectedEmergencyIds.has(d.id));
+    if (selected.length === 0) {
+      alert('Please select at least one document to include in the packet.');
+      return;
     }
+    setEmergencyPacket({
+      owner_username: '',
+      document_count: selected.length,
+      documents: selected.map(d => ({
+        title: d.title,
+        category: d.category,
+        summary: d.ai_summary,
+        summary_es: d.ai_summary_es,
+        action_items: d.action_items || [],
+        file_url: d.file_url,
+        uploaded: d.created_at,
+      })),
+    });
   };
 
   const handlePrintPacket = () => {
@@ -892,7 +916,7 @@ export default function Dashboard({ onLogout }) {
         {activeTab === 'emergency' && (
           <div className="max-w-3xl">
             <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-6">
-              <div className="flex items-center space-x-3 mb-2">
+              <div className="flex items-center space-x-3 mb-4">
                 <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
                   <AlertTriangle size={20} className="text-red-500" />
                 </div>
@@ -901,21 +925,87 @@ export default function Dashboard({ onLogout }) {
                   <p className="text-sm text-stone-500">{t.emergencySubtitle}</p>
                 </div>
               </div>
+
+              {/* Category filter + select all row */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <select
+                  className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none text-sm text-stone-600 w-full sm:w-auto"
+                  value={emergencyCategoryFilter}
+                  onChange={e => { setEmergencyCategoryFilter(e.target.value); setEmergencyPacket(null); }}
+                >
+                  <option value="All">{t.allCategories}</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{getCategoryLabel(c)}</option>)}
+                </select>
+                {emergencyDocs.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (selectedEmergencyIds.size === emergencyDocs.length) {
+                        setSelectedEmergencyIds(new Set());
+                      } else {
+                        setSelectedEmergencyIds(new Set(emergencyDocs.map(d => d.id)));
+                      }
+                      setEmergencyPacket(null);
+                    }}
+                    className="text-xs font-semibold text-stone-500 border border-stone-200 px-4 py-2.5 rounded-xl hover:bg-stone-50 transition"
+                  >
+                    {selectedEmergencyIds.size === emergencyDocs.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                )}
+              </div>
+
+              {/* Selectable document list */}
+              {emergencyDocs.length === 0 ? (
+                <div className="text-center py-10 text-stone-400">
+                  <AlertTriangle size={36} className="mx-auto mb-2 text-stone-200" />
+                  <p className="font-medium text-stone-500">{t.noEmergencyDocs}</p>
+                  <p className="text-sm mt-1 max-w-sm mx-auto">{t.noEmergencyHint}</p>
+                </div>
+              ) : (
+                <div className="space-y-2 mb-4 max-h-64 overflow-y-auto pr-1">
+                  {emergencyDocs.map(doc => {
+                    const checked = selectedEmergencyIds.has(doc.id);
+                    return (
+                      <label
+                        key={doc.id}
+                        className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition ${checked ? 'border-red-300 bg-red-50' : 'border-stone-200 hover:bg-stone-50'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          className="w-4 h-4 accent-red-600 flex-shrink-0"
+                          onChange={() => {
+                            const next = new Set(selectedEmergencyIds);
+                            checked ? next.delete(doc.id) : next.add(doc.id);
+                            setSelectedEmergencyIds(next);
+                            setEmergencyPacket(null);
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-stone-800 truncate">{doc.title}</p>
+                          <p className="text-xs text-stone-400">{getCategoryLabel(doc.category)} · {formatDate(doc.created_at)}</p>
+                        </div>
+                        <AlertTriangle size={13} className="text-red-400 flex-shrink-0" />
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
               <button
                 onClick={handleGeneratePacket}
-                disabled={loadingPacket}
-                className="mt-4 flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-sm text-sm disabled:opacity-60"
+                disabled={selectedEmergencyIds.size === 0 || emergencyDocs.length === 0}
+                className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-sm text-sm disabled:opacity-50"
               >
                 <Printer size={16} />
-                <span>{loadingPacket ? t.processing : t.generatePacket}</span>
+                <span>{t.generatePacket} ({selectedEmergencyIds.size})</span>
               </button>
             </div>
 
-            {emergencyPacket ? (
+            {emergencyPacket && (
               <div className="space-y-4 print:block" id="emergency-packet">
                 <div className="hidden print:block text-center mb-6">
                   <h1 className="text-2xl font-bold">ResourceBridge Emergency Packet</h1>
-                  <p className="text-sm text-gray-500">{emergencyPacket.owner_email} — {new Date().toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500">{new Date().toLocaleDateString()}</p>
                 </div>
                 {emergencyPacket.documents.map((doc, i) => (
                   <div key={i} className="bg-white rounded-2xl border border-red-100 shadow-sm p-5">
@@ -959,12 +1049,6 @@ export default function Dashboard({ onLogout }) {
                   <Printer size={15} />
                   <span>{t.printPacket}</span>
                 </button>
-              </div>
-            ) : (
-              <div className="text-center py-16 text-stone-400">
-                <AlertTriangle size={40} className="mx-auto mb-3 text-stone-200" />
-                <p className="font-medium text-stone-500">{t.noEmergencyDocs}</p>
-                <p className="text-sm mt-1 max-w-sm mx-auto">{t.noEmergencyHint}</p>
               </div>
             )}
           </div>
