@@ -43,12 +43,13 @@ export default function Dashboard({ onLogout }) {
   const [showUploadPanel, setShowUploadPanel] = useState(false);
   const [emergencyPacket, setEmergencyPacket] = useState(null);
   const [loadingPacket, setLoadingPacket] = useState(false);
+  const [noEmergencyModal, setNoEmergencyModal] = useState(false);
   // Emergency tab state
-  const [emergencyDocs, setEmergencyDocs] = useState([]);        // all emergency docs
-  const [selectedPacketIds, setSelectedPacketIds] = useState([]); // checked ones to print
+  const [emergencyDocs, setEmergencyDocs] = useState([]);
+  const [selectedPacketIds, setSelectedPacketIds] = useState([]);
   const [emergencyCategoryFilter, setEmergencyCategoryFilter] = useState('All');
   const [packetGenerated, setPacketGenerated] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // doc to confirm delete
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // To-Do list state (persisted to localStorage per user)
   const [showTodo, setShowTodo] = useState(false);
@@ -210,7 +211,7 @@ export default function Dashboard({ onLogout }) {
 
   const handleGeneratePacket = () => {
     if (selectedPacketIds.length === 0) {
-      alert('Please select at least one document to include in the packet.');
+      setNoEmergencyModal(true);
       return;
     }
     setPacketGenerated(true);
@@ -418,6 +419,29 @@ export default function Dashboard({ onLogout }) {
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── No Emergency Selection Modal ── */}
+      {noEmergencyModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={18} className="text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-stone-900 text-base">No documents selected</h3>
+                <p className="text-stone-500 text-sm mt-0.5">Please select at least one document to include in the packet.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setNoEmergencyModal(false)}
+              className="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition shadow-sm text-sm"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
