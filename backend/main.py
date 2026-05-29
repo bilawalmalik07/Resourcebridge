@@ -98,7 +98,7 @@ def send_verification(user_in: schemas.UserCreate, db: Session = Depends(get_db)
         user_in.email, code, user_in.username)
     if not sent:
         raise HTTPException(
-            status_code=500, detail="Failed to send verification email. Check SMTP settings.")
+            status_code=500, detail="Failed to send verification email. Please try again.")
     return {"message": "Verification code sent. Check your email."}
 
 
