@@ -64,14 +64,17 @@ Return EXACTLY in this format:
 
 def _resolve_ext(file_url: str, content_type: str, original_filename: str | None) -> str | None:
     """Determine file extension from original filename, Content-Type, or URL (in priority order)."""
+    # Always trust original_filename first — most reliable source
     if original_filename:
         ext = Path(original_filename).suffix.lower()
         if ext in GEMINI_SUPPORTED or ext in TEXT_EXTRACTABLE:
             print(f"Extension from original_filename: {ext}")
             return ext
 
+    # Try Content-Type header — check full string first for application/pdf
     ct = content_type.lower()
     ct_map = {
+        "application/pdf": ".pdf",
         "pdf": ".pdf",
         "png": ".png",
         "jpeg": ".jpg", "jpg": ".jpg",
@@ -90,10 +93,17 @@ def _resolve_ext(file_url: str, content_type: str, original_filename: str | None
             print(f"Extension from Content-Type '{content_type}': {ext}")
             return ext
 
-    url_ext = Path(file_url.split("?")[0]).suffix.lower()
+    # Try URL path extension (strip query params first)
+    url_path = file_url.split("?")[0]
+    url_ext = Path(url_path).suffix.lower()
     if url_ext in GEMINI_SUPPORTED or url_ext in TEXT_EXTRACTABLE:
         print(f"Extension from URL path: {url_ext}")
         return url_ext
+
+    # Last resort: Cloudinary raw PDF URLs may not have .pdf in path
+    if "/raw/" in file_url or ".pdf" in url_path.lower():
+        print("Extension inferred as .pdf from URL pattern")
+        return ".pdf"
 
     return None
 
@@ -187,6 +197,7 @@ def process_document_with_ai(file_url: str, original_filename: str | None = None
         file_bytes = resp.content
         content_type = resp.headers.get("Content-Type", "")
 
+        print(f"Content-Type from server: {content_type}")
         ext = _resolve_ext(file_url, content_type, original_filename)
 
         if not ext:
@@ -226,7 +237,7 @@ def process_document_with_ai(file_url: str, original_filename: str | None = None
         return _parse_response(response_text)
 
     except requests.exceptions.RequestException as e:
-        print(f"Download error: {e}")
+        print(f"Download error: {type(e).__name__}: {e}")
         return {
             "ocr_text": "Failed to download the document.",
             "ai_summary": "Could not reach the file. Please try again.",

@@ -18,7 +18,7 @@ def upload_file_to_cloudinary(file_bytes: bytes, filename: str, folder: str = "r
     """Upload file bytes to Cloudinary and return the secure URL."""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     image_exts = {"png", "jpg", "jpeg", "gif",
-                  "webp", "heic", "heif", "tiff", "tif", "bmp", "pdf"}
+                  "webp", "heic", "heif", "tiff", "tif", "bmp"}
     resource_type = "image" if ext in image_exts else "raw"
 
     safe_name = re.sub(r"[^\w.\-]", "_", filename)
