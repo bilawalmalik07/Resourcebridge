@@ -1,16 +1,14 @@
 import os
-import smtplib
 import random
 import string
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")      # your Gmail address
-# Gmail App Password (not your real password)
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+resend.api_key = os.getenv("RESEND_API_KEY")
+# use resend.dev for testing, your domain for production
+FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 
 
 def generate_code(length: int = 6) -> str:
@@ -18,12 +16,11 @@ def generate_code(length: int = 6) -> str:
 
 
 def send_verification_email(to_email: str, code: str, username: str) -> bool:
-    """Send a verification code email. Returns True on success, False on failure."""
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        print("SMTP_EMAIL or SMTP_PASSWORD not set — cannot send email.")
+    """Send a verification code email via Resend. Returns True on success, False on failure."""
+    if not resend.api_key:
+        print("RESEND_API_KEY not set — cannot send email.")
         return False
 
-    subject = "Your ResourceBridge Verification Code"
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8f7f4; border-radius: 16px;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -44,18 +41,17 @@ def send_verification_email(to_email: str, code: str, username: str) -> bool:
     </div>
     """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = SMTP_EMAIL
-    msg["To"] = to_email
-    msg.attach(MIMEText(html, "html"))
-
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
-        print(f"Verification email sent to {to_email}")
+        params: resend.Emails.SendParams = {
+            "from": FROM_EMAIL,
+            "to": [to_email],
+            "subject": "Your ResourceBridge Verification Code",
+            "html": html,
+        }
+        response = resend.Emails.send(params)
+        print(
+            f"Verification email sent to {to_email} — id: {response.get('id')}")
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"Failed to send email via Resend: {e}")
         return False
