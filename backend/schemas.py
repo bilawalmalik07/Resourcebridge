@@ -39,6 +39,7 @@ class DocumentCreate(BaseModel):
     category: str | None = None
     is_emergency: bool = False
     original_filename: str | None = None
+    ai_result: Optional[Any] = None
 
 
 class DocumentResponse(BaseModel):
@@ -61,6 +62,7 @@ class DocumentResponse(BaseModel):
 class UploadResponse(BaseModel):
     file_url: str
     original_filename: str
+    ai_result: Optional[Any] = None
 
 
 class VerifyCode(BaseModel):

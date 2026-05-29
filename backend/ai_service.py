@@ -209,6 +209,42 @@ def _download_with_retry(url: str, retries: int = 3, timeout: int = 60) -> reque
     raise last_exc
 
 
+def process_document_from_bytes(file_bytes: bytes, original_filename: str) -> dict:
+    """Process a document directly from bytes — no download needed. Called at upload time."""
+    try:
+        ext = Path(original_filename).suffix.lower(
+        ) if original_filename else None
+        if not ext or (ext not in GEMINI_SUPPORTED and ext not in TEXT_EXTRACTABLE):
+            return {
+                "ocr_text": "",
+                "ai_summary": "Could not determine file type.",
+                "ai_summary_es": "No se pudo determinar el tipo de archivo.",
+                "action_items": [],
+            }
+        print(f"Processing bytes as '{ext}'...")
+        if ext in GEMINI_SUPPORTED:
+            response_text = _send_file_to_gemini(file_bytes, ext)
+        else:
+            extracted = _extract_text_from_office(file_bytes, ext)
+            if not extracted.strip():
+                return {
+                    "ocr_text": "",
+                    "ai_summary": "Could not extract text from this file.",
+                    "ai_summary_es": "No se pudo extraer texto.",
+                    "action_items": [],
+                }
+            response_text = _send_text_to_gemini(extracted)
+        return _parse_response(response_text)
+    except Exception as e:
+        print(f"AI processing error: {type(e).__name__}: {e}")
+        return {
+            "ocr_text": f"Error: {type(e).__name__}: {str(e)[:300]}",
+            "ai_summary": "Summary unavailable at this moment.",
+            "ai_summary_es": "Resumen no disponible en este momento.",
+            "action_items": [],
+        }
+
+
 def process_document_with_ai(file_url: str, original_filename: str | None = None) -> dict:
     try:
         # Use a signed URL for Cloudinary raw resources to avoid 401 Unauthorized

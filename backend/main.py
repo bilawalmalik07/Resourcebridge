@@ -174,10 +174,22 @@ async def upload_file(
         raise HTTPException(
             status_code=400, detail="File too large. Maximum 20MB.")
     folder = f"resourcebridge/user_{current_user.id}"
+    original_filename = file.filename or "document"
+
+    # Upload to Cloudinary
     file_url = cloudinary_service.upload_file_to_cloudinary(
-        file_bytes, file.filename or "document", folder=folder
+        file_bytes, original_filename, folder=folder
     )
-    return {"file_url": file_url, "original_filename": file.filename or "document"}
+
+    # Process AI directly from bytes — no re-download needed, avoids 401 on raw URLs
+    ai_result = ai_service.process_document_from_bytes(
+        file_bytes, original_filename)
+
+    return {
+        "file_url": file_url,
+        "original_filename": original_filename,
+        "ai_result": ai_result,
+    }
 
 
 # ─── Documents ─────────────────────────────────────────────────────────────────
@@ -189,8 +201,12 @@ def create_document(
     current_user: models.User = Depends(security.get_current_user)
 ):
     print(f"Processing: {doc_in.title}")
-    ai = ai_service.process_document_with_ai(
-        doc_in.file_url, original_filename=doc_in.original_filename)
+    # Use pre-computed AI result from upload step if provided, otherwise fall back to download
+    if doc_in.ai_result:
+        ai = doc_in.ai_result
+    else:
+        ai = ai_service.process_document_with_ai(
+            doc_in.file_url, original_filename=doc_in.original_filename)
     doc = models.Document(
         title=doc_in.title,
         file_url=doc_in.file_url,
