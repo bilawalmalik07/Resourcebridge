@@ -290,6 +290,24 @@ def delete_document(
     db.commit()
 
 
+# ─── Signed View URL ───────────────────────────────────────────────────────────
+
+@app.get("/api/documents/{doc_id}/view-url")
+def get_view_url(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    doc = db.query(models.Document).filter(
+        models.Document.id == doc_id,
+        models.Document.owner_id == current_user.id
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    signed_url = cloudinary_service.get_signed_download_url(doc.file_url)
+    return {"url": signed_url}
+
+
 # ─── Reminders ─────────────────────────────────────────────────────────────────
 
 @app.post("/api/reminders", response_model=schemas.ReminderResponse, status_code=201)
