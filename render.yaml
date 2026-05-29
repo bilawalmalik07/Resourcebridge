@@ -33,7 +33,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: "https://resourcebridge-backend.onrender.com"
+        value: "https://resourcebridge-v64j.onrender.com"
     routes:
       - type: rewrite
         source: /*
