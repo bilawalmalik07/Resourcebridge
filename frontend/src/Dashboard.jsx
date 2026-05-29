@@ -218,8 +218,15 @@ export default function Dashboard({ onLogout }) {
   };
 
   const handlePrintPacket = () => {
-    const packetEl = document.getElementById('emergency-packet');
-    if (!packetEl) return;
+    const selectedDocs = emergencyDocs.filter(d =>
+      selectedPacketIds.includes(d.id) &&
+      d.ai_summary &&
+      !d.ai_summary.toLowerCase().includes('could not reach')
+    );
+    if (selectedDocs.length === 0) {
+      setNoEmergencyModal(true);
+      return;
+    }
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -241,28 +248,26 @@ export default function Dashboard({ onLogout }) {
             .low { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
             .task { font-weight: 600; }
             .deadline { opacity: 0.7; margin-left: 8px; }
-            a { color: #1d4ed8; font-size: 12px; }
+            .view-link { display: inline-block; margin-top: 10px; font-size: 12px; color: #1d4ed8; text-decoration: none; }
           </style>
         </head>
         <body>
           <h1>ResourceBridge Emergency Packet</h1>
           <p class="date">${new Date().toLocaleDateString()}</p>
-          ${emergencyDocs
-            .filter(d => selectedPacketIds.includes(d.id))
-            .map(doc => `
-              <div class="doc-card">
-                <div class="doc-title">${doc.title}</div>
-                <div class="doc-meta">${doc.category || ''} · ${doc.created_at ? new Date(doc.created_at).toLocaleDateString() : ''}</div>
-                <div class="summary">${lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary || ''}</div>
-                ${(doc.action_items || []).map(item => `
-                  <div class="action-item ${item.priority || 'low'}">
-                    <span class="task">${item.task}</span>
-                    ${item.deadline ? `<span class="deadline">· ${item.deadline}</span>` : ''}
-                  </div>
-                `).join('')}
-                <a href="${doc.file_url}" target="_blank">${doc.file_url}</a>
-              </div>
-            `).join('')}
+          ${selectedDocs.map(doc => `
+            <div class="doc-card">
+              <div class="doc-title">${doc.title}</div>
+              <div class="doc-meta">${doc.category || ''} · ${doc.created_at ? new Date(doc.created_at).toLocaleDateString() : ''}</div>
+              <div class="summary">${lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary || ''}</div>
+              ${(doc.action_items || []).map(item => `
+                <div class="action-item ${item.priority || 'low'}">
+                  <span class="task">${item.task}</span>
+                  ${item.deadline ? `<span class="deadline">· ${item.deadline}</span>` : ''}
+                </div>
+              `).join('')}
+              <a class="view-link" href="${doc.file_url}" target="_blank">View Original File →</a>
+            </div>
+          `).join('')}
         </body>
       </html>
     `);
@@ -486,7 +491,7 @@ export default function Dashboard({ onLogout }) {
               </div>
               <div>
                 <h3 className="font-bold text-stone-900 text-base">No documents selected</h3>
-                <p className="text-stone-500 text-sm mt-0.5">Please select at least one document to include in the packet.</p>
+                <p className="text-stone-500 text-sm mt-0.5">Please select at least one valid document to include in the packet.</p>
               </div>
             </div>
             <button
