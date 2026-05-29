@@ -45,7 +45,7 @@ export default function Dashboard({ onLogout }) {
   const [loadingPacket, setLoadingPacket] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // doc to confirm delete
 
-  // ── To-Do List ──
+  // To-Do list state (persisted to localStorage per user)
   const [showTodo, setShowTodo] = useState(false);
   const [todos, setTodos] = useState(() => {
     try { return JSON.parse(localStorage.getItem(getUserKey('rb_todos')) || '[]'); } catch { return []; }
@@ -65,7 +65,7 @@ export default function Dashboard({ onLogout }) {
   const toggleTodo = (id) => saveTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t));
   const deleteTodo = (id) => saveTodos(todos.filter(t => t.id !== id));
 
-  // ── Reminders (API-driven) ──
+  // Reminders state (API-backed)
   const [showReminders, setShowReminders] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [reminderText, setReminderText] = useState('');
@@ -82,8 +82,6 @@ export default function Dashboard({ onLogout }) {
   const addReminder = async () => {
     const text = reminderText.trim();
     if (!text || !reminderDate || !reminderTime) return;
-    // Convert the user's local date+time to a UTC ISO string so the backend
-    // stores and fires the reminder at the correct moment regardless of server timezone.
     const localDate = new Date(`${reminderDate}T${reminderTime}:00`);
     const remind_at = localDate.toISOString();
     try {
@@ -133,14 +131,12 @@ export default function Dashboard({ onLogout }) {
     setUploadError('');
 
     try {
-      // Step 1: Upload file to Cloudinary via backend
       const formData = new FormData();
       formData.append('file', file);
       const uploadRes = await API.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // Step 2: Create document record with returned URL + trigger AI pipeline
       const docRes = await API.post('/api/documents', {
         title,
         file_url: uploadRes.data.file_url,
@@ -218,7 +214,6 @@ export default function Dashboard({ onLogout }) {
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '—';
   const getCategoryLabel = (cat) => t[cat] || cat;
 
-  // Summary to show based on language
   const getSummary = (doc) => lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary;
 
   return (

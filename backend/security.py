@@ -54,7 +54,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except (jwt.PyJWTError, Exception):
         raise credentials_exception
 
-    # Look up by username now
     user = db.query(models.User).filter(
         models.User.username == token_data.username).first()
     if user is None:

@@ -70,7 +70,7 @@ class VerifyCode(BaseModel):
 
 class ReminderCreate(BaseModel):
     text: str
-    remind_at: datetime   # ISO string from frontend e.g. "2026-05-28T22:00:00"
+    remind_at: datetime
 
 
 class ReminderResponse(BaseModel):

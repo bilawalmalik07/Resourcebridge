@@ -15,14 +15,7 @@ cloudinary.config(
 
 
 def upload_file_to_cloudinary(file_bytes: bytes, filename: str, folder: str = "resourcebridge") -> str:
-    """
-    Uploads file bytes to Cloudinary and returns a publicly accessible URL.
-
-    For raw files (docx, pdf, xlsx, etc.), we set public_id explicitly using
-    a sanitized version of the original filename so the extension is preserved
-    in the returned URL. Without this, Cloudinary strips the extension and
-    ai_service cannot detect the file type.
-    """
+    """Upload file bytes to Cloudinary and return the secure URL."""
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     image_exts = {"png", "jpg", "jpeg", "gif",
                   "webp", "heic", "heif", "tiff", "tif", "bmp"}

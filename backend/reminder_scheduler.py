@@ -1,6 +1,5 @@
 """
-Background thread that checks every 60 seconds for due reminders,
-emails the user via Resend, then marks them sent.
+Background scheduler: checks every 60 seconds for due reminders and sends email notifications.
 """
 import threading
 import time
@@ -33,9 +32,9 @@ def _check_and_send():
                     reminder.sent = True
                     print(f"Reminder #{reminder.id} sent to {user.email}")
                 else:
-                    print(f"Reminder #{reminder.id} failed — will retry next cycle")
+                    print(
+                        f"Reminder #{reminder.id} failed — will retry next cycle")
             else:
-                # User has no email — mark sent so we don't loop forever
                 reminder.sent = True
                 print(f"Reminder #{reminder.id} skipped — user has no email")
 
@@ -49,7 +48,7 @@ def _check_and_send():
 
 
 def start_scheduler():
-    """Call once at app startup to launch the background checker."""
+    """Start the background reminder checker thread."""
     def loop():
         print("Reminder scheduler started — checking every 60s.")
         while True:

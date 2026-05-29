@@ -21,13 +21,12 @@ load_dotenv()
 
 models.Base.metadata.create_all(bind=engine)
 
-# Temporary store for pending email verifications
+# In-memory store for pending email verifications (keyed by email)
 _pending: dict = {}
 CODE_TTL = 600  # 10 minutes
 
 app = FastAPI(title="ResourceBridge API")
 
-# Start reminder scheduler background thread
 reminder_scheduler.start_scheduler()
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")

@@ -63,20 +63,13 @@ Return EXACTLY in this format:
 
 
 def _resolve_ext(file_url: str, content_type: str, original_filename: str | None) -> str | None:
-    """
-    Determine the file extension using three sources in priority order:
-    1. original_filename passed from the upload (most reliable)
-    2. Content-Type header
-    3. URL path suffix (works when cloudinary_service sets public_id correctly)
-    """
-    # 1. Original filename — always trust this first
+    """Determine file extension from original filename, Content-Type, or URL (in priority order)."""
     if original_filename:
         ext = Path(original_filename).suffix.lower()
         if ext in GEMINI_SUPPORTED or ext in TEXT_EXTRACTABLE:
             print(f"Extension from original_filename: {ext}")
             return ext
 
-    # 2. Content-Type header
     ct = content_type.lower()
     ct_map = {
         "pdf": ".pdf",
@@ -97,7 +90,6 @@ def _resolve_ext(file_url: str, content_type: str, original_filename: str | None
             print(f"Extension from Content-Type '{content_type}': {ext}")
             return ext
 
-    # 3. URL path suffix
     url_ext = Path(file_url.split("?")[0]).suffix.lower()
     if url_ext in GEMINI_SUPPORTED or url_ext in TEXT_EXTRACTABLE:
         print(f"Extension from URL path: {url_ext}")
@@ -158,7 +150,7 @@ def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
 
 
 def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
-    """Upload file to Gemini Files API and get response text."""
+    """Upload file to Gemini Files API and return response text."""
     mime_type = GEMINI_SUPPORTED[ext]
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
         tmp.write(file_bytes)

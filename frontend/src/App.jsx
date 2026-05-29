@@ -3,10 +3,7 @@ import Landing from './Landing';
 import Login from './Login';
 import Dashboard from './Dashboard';
 
-// Three-state app flow:
-// 'landing' → public landing page
-// 'auth'    → login / register
-// 'app'     → authenticated dashboard
+// App views: 'landing' → 'auth' → 'app'
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [view, setView] = useState(token ? 'app' : 'landing');
