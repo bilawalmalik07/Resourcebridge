@@ -66,3 +66,20 @@ class UploadResponse(BaseModel):
 class VerifyCode(BaseModel):
     email: EmailStr
     code: str
+
+
+class ReminderCreate(BaseModel):
+    text: str
+    remind_at: datetime   # ISO string from frontend e.g. "2026-05-28T22:00:00"
+
+
+class ReminderResponse(BaseModel):
+    id: int
+    text: str
+    remind_at: datetime
+    sent: bool
+    created_at: datetime
+    owner_id: int
+
+    class Config:
+        from_attributes = True

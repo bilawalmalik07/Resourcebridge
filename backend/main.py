@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import ai_service
 import cloudinary_service
 import email_service
+import reminder_scheduler
 import models
 import schemas
 import security
@@ -21,11 +22,13 @@ load_dotenv()
 models.Base.metadata.create_all(bind=engine)
 
 # Temporary store for pending email verifications
-# { email: { code, expires_at, username, password_hash } }
 _pending: dict = {}
 CODE_TTL = 600  # 10 minutes
 
 app = FastAPI(title="ResourceBridge API")
+
+# Start reminder scheduler background thread
+reminder_scheduler.start_scheduler()
 
 raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173")
 allowed_origins = [o.strip() for o in raw_origins.split(",")]
@@ -38,6 +41,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ─── Health ────────────────────────────────────────────────────────────────────
 
 @app.get("/api/health")
 def read_root():
@@ -58,7 +63,6 @@ def test_database_connection(db: Session = Depends(get_db)):
 
 @app.post("/api/send-verification")
 def send_verification(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Step 1: validate, generate code, email it. Does NOT create the account yet."""
     import re
     u = user_in.username
     if len(u) < 8:
@@ -104,7 +108,6 @@ def send_verification(user_in: schemas.UserCreate, db: Session = Depends(get_db)
 
 @app.post("/api/verify-and-register", response_model=schemas.UserResponse, status_code=201)
 def verify_and_register(payload: schemas.VerifyCode, db: Session = Depends(get_db)):
-    """Step 2: confirm the code and actually create the account."""
     entry = _pending.get(payload.email)
     if not entry:
         raise HTTPException(
@@ -117,7 +120,6 @@ def verify_and_register(payload: schemas.VerifyCode, db: Session = Depends(get_d
         raise HTTPException(
             status_code=400, detail="Incorrect code. Please try again.")
 
-    # Create the user
     user = models.User(
         username=entry["username"],
         email=payload.email,
@@ -130,32 +132,8 @@ def verify_and_register(payload: schemas.VerifyCode, db: Session = Depends(get_d
     return user
 
 
-@app.post("/api/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    # Check username is taken
-    if db.query(models.User).filter(models.User.username == user_in.username).first():
-        raise HTTPException(
-            status_code=400, detail="Username is already taken.")
-    # Check email is taken (only if provided)
-    if user_in.email:
-        if db.query(models.User).filter(models.User.email == user_in.email).first():
-            raise HTTPException(
-                status_code=400, detail="Email is already registered.")
-    hashed = security.get_password_hash(user_in.password)
-    user = models.User(
-        username=user_in.username,
-        email=user_in.email or None,
-        hashed_password=hashed
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
 @app.post("/api/login", response_model=schemas.Token)
 def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # form_data.username holds whatever the user typed in the username field
     user = db.query(models.User).filter(
         models.User.username == form_data.username).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
@@ -213,9 +191,7 @@ def create_document(
 ):
     print(f"Processing: {doc_in.title}")
     ai = ai_service.process_document_with_ai(
-        doc_in.file_url,
-        original_filename=doc_in.original_filename
-    )
+        doc_in.file_url, original_filename=doc_in.original_filename)
     doc = models.Document(
         title=doc_in.title,
         file_url=doc_in.file_url,
@@ -298,6 +274,57 @@ def delete_document(
     db.delete(doc)
     db.commit()
 
+
+# ─── Reminders ─────────────────────────────────────────────────────────────────
+
+@app.post("/api/reminders", response_model=schemas.ReminderResponse, status_code=201)
+def create_reminder(
+    r_in: schemas.ReminderCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    from datetime import timezone as tz
+    remind_at = r_in.remind_at
+    if remind_at.tzinfo is None:
+        remind_at = remind_at.replace(tzinfo=tz.utc)
+    reminder = models.Reminder(
+        text=r_in.text,
+        remind_at=remind_at,
+        owner_id=current_user.id,
+    )
+    db.add(reminder)
+    db.commit()
+    db.refresh(reminder)
+    return reminder
+
+
+@app.get("/api/reminders", response_model=list[schemas.ReminderResponse])
+def get_reminders(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    return db.query(models.Reminder).filter(
+        models.Reminder.owner_id == current_user.id
+    ).order_by(models.Reminder.remind_at.asc()).all()
+
+
+@app.delete("/api/reminders/{reminder_id}", status_code=204)
+def delete_reminder(
+    reminder_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    r = db.query(models.Reminder).filter(
+        models.Reminder.id == reminder_id,
+        models.Reminder.owner_id == current_user.id
+    ).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Reminder not found.")
+    db.delete(r)
+    db.commit()
+
+
+# ─── Emergency Packet ──────────────────────────────────────────────────────────
 
 @app.get("/api/emergency-packet")
 def generate_emergency_packet(

@@ -65,36 +65,49 @@ export default function Dashboard({ onLogout }) {
   const toggleTodo = (id) => saveTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t));
   const deleteTodo = (id) => saveTodos(todos.filter(t => t.id !== id));
 
-  // ── Reminders ──
+  // ── Reminders (API-driven) ──
   const [showReminders, setShowReminders] = useState(false);
-  const [reminders, setReminders] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(getUserKey('rb_reminders')) || '[]'); } catch { return []; }
-  });
+  const [reminders, setReminders] = useState([]);
   const [reminderText, setReminderText] = useState('');
   const [reminderDate, setReminderDate] = useState('');
   const [reminderTime, setReminderTime] = useState('');
 
-  const saveReminders = (updated) => {
-    setReminders(updated);
-    localStorage.setItem(getUserKey('rb_reminders'), JSON.stringify(updated));
+  const fetchReminders = async () => {
+    try {
+      const res = await API.get('/api/reminders');
+      setReminders(res.data);
+    } catch (err) { console.error('Error fetching reminders:', err); }
   };
-  const addReminder = () => {
+
+  const addReminder = async () => {
     const text = reminderText.trim();
-    if (!text || !reminderDate) return;
-    saveReminders([{ id: Date.now(), text, date: reminderDate, time: reminderTime }, ...reminders]);
-    setReminderText(''); setReminderDate(''); setReminderTime('');
+    if (!text || !reminderDate || !reminderTime) return;
+    const remind_at = `${reminderDate}T${reminderTime}:00`;
+    try {
+      const res = await API.post('/api/reminders', { text, remind_at });
+      setReminders(prev => [...prev, res.data]);
+      setReminderText(''); setReminderDate(''); setReminderTime('');
+    } catch (err) { console.error('Error adding reminder:', err); }
   };
-  const deleteReminder = (id) => saveReminders(reminders.filter(r => r.id !== id));
-  const formatReminderDate = (date, time) => {
-    const d = new Date(`${date}T${time || '00:00'}`);
+
+  const deleteReminder = async (id) => {
+    try {
+      await API.delete(`/api/reminders/${id}`);
+      setReminders(prev => prev.filter(r => r.id !== id));
+    } catch (err) { console.error('Error deleting reminder:', err); }
+  };
+
+  const formatReminderDate = (remind_at) => {
+    const d = new Date(remind_at);
     return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) +
-      (time ? ` · ${d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}` : '');
+      ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   };
-  const isOverdue = (date, time) => new Date(`${date}T${time || '23:59'}`) < new Date();
+  const isOverdue = (remind_at) => new Date(remind_at) < new Date();
 
   const fileInputRef = useRef();
 
   useEffect(() => { fetchDocuments(); }, [categoryFilter, emergencyOnly]);
+  useEffect(() => { fetchReminders(); }, []);
 
   const fetchDocuments = async () => {
     try {
@@ -240,7 +253,7 @@ export default function Dashboard({ onLogout }) {
           >
             <Bell size={15} />
             <span>Reminders</span>
-            {reminders.filter(r => !isOverdue(r.date, r.time) === false || true).length > 0 && (
+            {reminders.filter(r => !isOverdue(r.remind_at) === false || true).length > 0 && (
               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {reminders.length}
               </span>
@@ -520,7 +533,7 @@ export default function Dashboard({ onLogout }) {
               </div>
               <button
                 onClick={addReminder}
-                disabled={!reminderText.trim() || !reminderDate}
+                disabled={!reminderText.trim() || !reminderDate || !reminderTime}
                 className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold transition disabled:opacity-40 flex items-center justify-center space-x-2"
               >
                 <Plus size={15} />
@@ -536,8 +549,8 @@ export default function Dashboard({ onLogout }) {
                   <p className="text-xs mt-1">Set a date and time above</p>
                 </div>
               )}
-              {[...reminders].sort((a, b) => new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`)).map(r => {
-                const overdue = isOverdue(r.date, r.time);
+              {[...reminders].sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)).map(r => {
+                const overdue = isOverdue(r.remind_at);
                 return (
                   <div key={r.id} className={`flex items-start gap-3 p-3.5 rounded-xl border group transition ${overdue ? 'border-red-100 bg-red-50/40' : 'border-stone-100 hover:border-amber-100 hover:bg-amber-50/30'}`}>
                     <div className={`mt-0.5 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${overdue ? 'bg-red-100' : 'bg-amber-50'}`}>
@@ -546,7 +559,7 @@ export default function Dashboard({ onLogout }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-stone-800 font-medium leading-snug">{r.text}</p>
                       <p className={`text-xs mt-0.5 font-medium ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
-                        {overdue && '⚠ Overdue · '}{formatReminderDate(r.date, r.time)}
+                        {r.sent ? '✓ Email sent · ' : overdue ? '⚠ Overdue · ' : ''}{formatReminderDate(r.remind_at)}
                       </p>
                     </div>
                     <button onClick={() => deleteReminder(r.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0 mt-0.5">
