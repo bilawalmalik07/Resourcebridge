@@ -200,13 +200,14 @@ def create_document(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    print(f"Processing: {doc_in.title}")
-    # Use pre-computed AI result from upload step if provided, otherwise fall back to download
-    if doc_in.ai_result:
-        ai = doc_in.ai_result
-    else:
-        ai = ai_service.process_document_with_ai(
-            doc_in.file_url, original_filename=doc_in.original_filename)
+    print(f"Saving: {doc_in.title}")
+    # ai_result is always pre-computed at upload time — never re-download from Cloudinary
+    ai = doc_in.ai_result or {
+        "ocr_text": "Document saved. Re-upload to process with AI.",
+        "ai_summary": "Document saved. Re-upload to process with AI.",
+        "ai_summary_es": "Documento guardado. Vuelva a subir para procesar con IA.",
+        "action_items": [],
+    }
     doc = models.Document(
         title=doc_in.title,
         file_url=doc_in.file_url,
