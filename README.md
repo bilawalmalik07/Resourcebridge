@@ -16,13 +16,21 @@ ResourceBridge bridges the gap between communities and the resources they need. 
 
 ## Features
 
-- 🌐 **Bilingual** — Full English & Spanish support, toggle anytime
-- 🔐 **Secure Auth** — Email verification, hashed passwords, JWT session tokens
+- 🌐 **Bilingual Interface** — Full English & Spanish support, toggle anytime
+- 🔐 **Secure Authentication** — Email verification, hashed passwords, JWT session tokens
 - 🤖 **AI Assistant** — Gemini AI for intelligent resource guidance
-- 📁 **Document Management** — Upload and organize resources via Cloudinary
-- ✅ **Task Tracking** — Stay organized with a built-in task manager
-- 🔔 **Real-time Alerts** — Get notified on important updates
-- 📱 **Responsive** — Works on any device
+- 📱 **Fully Responsive** — Works seamlessly on any device
+- ⚡ **Fast & Lightweight** — Built with Vite for instant load times
+
+---
+
+## Functionality
+
+- 📧 **Email Reminders** — Automated emails sent for upcoming deadlines and alerts
+- 📁 **Document Upload** — Upload and store important files securely via Cloudinary
+- 🗂️ **Organized Resource Library** — Documents categorized and easy to browse
+- 🔴 **Red Packet System** — Flag urgent or high-priority items for immediate attention
+- ✅ **To-Do List** — Built-in task manager to track and complete action items
 
 ---
 
