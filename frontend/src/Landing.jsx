@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from './LanguageContext';
-import { Shield, Globe, Zap, AlertTriangle, ArrowRight, FileText } from 'lucide-react';
+import { Shield, Globe, Zap, AlertTriangle, ArrowRight, FileText, ListTodo, Bell } from 'lucide-react';
 
 export default function Landing({ onGetStarted }) {
   const { t, toggle, lang } = useLanguage();
@@ -10,6 +10,8 @@ export default function Landing({ onGetStarted }) {
     { icon: Globe, title: t.feature2Title, desc: t.feature2Desc, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { icon: AlertTriangle, title: t.feature3Title, desc: t.feature3Desc, color: 'text-red-500', bg: 'bg-red-50' },
     { icon: Shield, title: t.feature4Title, desc: t.feature4Desc, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { icon: ListTodo, title: t.feature5Title, desc: t.feature5Desc, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { icon: Bell, title: t.feature6Title, desc: t.feature6Desc, color: 'text-sky-500', bg: 'bg-sky-50' },
   ];
 
   return (
