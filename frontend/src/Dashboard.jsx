@@ -217,7 +217,60 @@ export default function Dashboard({ onLogout }) {
     setPacketGenerated(true);
   };
 
-  const handlePrintPacket = () => { window.print(); };
+  const handlePrintPacket = () => {
+    const packetEl = document.getElementById('emergency-packet');
+    if (!packetEl) return;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>ResourceBridge Emergency Packet</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: Arial, sans-serif; padding: 32px; color: #1c1917; background: white; }
+            h1 { font-size: 22px; font-weight: 900; text-align: center; margin-bottom: 4px; }
+            .date { text-align: center; color: #78716c; font-size: 13px; margin-bottom: 28px; }
+            .doc-card { border: 1px solid #fecaca; border-radius: 12px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; }
+            .doc-title { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+            .doc-meta { font-size: 12px; color: #a8a29e; margin-bottom: 12px; }
+            .summary { font-size: 13px; color: #44403c; background: #f8f7f4; border-radius: 8px; padding: 14px; margin-bottom: 12px; line-height: 1.6; }
+            .action-item { display: flex; gap: 8px; font-size: 12px; padding: 8px 10px; border-radius: 6px; border: 1px solid #e7e5e4; margin-bottom: 6px; }
+            .high { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+            .medium { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+            .low { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+            .task { font-weight: 600; }
+            .deadline { opacity: 0.7; margin-left: 8px; }
+            a { color: #1d4ed8; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <h1>ResourceBridge Emergency Packet</h1>
+          <p class="date">${new Date().toLocaleDateString()}</p>
+          ${emergencyDocs
+            .filter(d => selectedPacketIds.includes(d.id))
+            .map(doc => `
+              <div class="doc-card">
+                <div class="doc-title">${doc.title}</div>
+                <div class="doc-meta">${doc.category || ''} · ${doc.created_at ? new Date(doc.created_at).toLocaleDateString() : ''}</div>
+                <div class="summary">${lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary || ''}</div>
+                ${(doc.action_items || []).map(item => `
+                  <div class="action-item ${item.priority || 'low'}">
+                    <span class="task">${item.task}</span>
+                    ${item.deadline ? `<span class="deadline">· ${item.deadline}</span>` : ''}
+                  </div>
+                `).join('')}
+                <a href="${doc.file_url}" target="_blank">${doc.file_url}</a>
+              </div>
+            `).join('')}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
 
   const filteredEmergencyDocs = emergencyDocs.filter(doc =>
     emergencyCategoryFilter === 'All' || doc.category === emergencyCategoryFilter
