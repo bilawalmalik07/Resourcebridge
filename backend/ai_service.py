@@ -238,7 +238,7 @@ def process_document_from_bytes(file_bytes: bytes, original_filename: str) -> di
     except Exception as e:
         print(f"AI processing error: {type(e).__name__}: {e}")
         return {
-            "ocr_text": f"Error: {type(e).__name__}: {str(e)[:300]}",
+            "ocr_text": "There was a problem processing your document. Please try again.",
             "ai_summary": "Summary unavailable at this moment.",
             "ai_summary_es": "Resumen no disponible en este momento.",
             "action_items": [],
@@ -296,7 +296,7 @@ def process_document_with_ai(file_url: str, original_filename: str | None = None
         print(
             f"Download FAILED after retries: {type(e).__name__}: {e} | URL: {file_url}")
         return {
-            "ocr_text": f"Download error: {type(e).__name__}: {str(e)[:300]}",
+            "ocr_text": "There was a problem processing your document. Please try again.",
             "ai_summary": "Could not reach the file. Please try again.",
             "ai_summary_es": "No se pudo acceder al archivo.",
             "action_items": [],
@@ -304,7 +304,7 @@ def process_document_with_ai(file_url: str, original_filename: str | None = None
     except Exception as e:
         print(f"AI processing error: {type(e).__name__}: {e}")
         return {
-            "ocr_text": f"Error: {type(e).__name__}: {str(e)[:300]}",
+            "ocr_text": "There was a problem processing your document. Please try again.",
             "ai_summary": "Summary unavailable at this moment.",
             "ai_summary_es": "Resumen no disponible en este momento.",
             "action_items": [],
