@@ -1,4 +1,4 @@
-# ResourceBridge 🌉
+# ResourceBridge
 
 > Technology for Community Stability
 
