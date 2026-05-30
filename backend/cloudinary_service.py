@@ -67,9 +67,6 @@ def get_signed_download_url(file_url: str) -> str:
             expires_at=int(time.time()) + 300,
         )
 
-        if resource_type == "raw":
-            options["flags"] = "attachment:false"
-
         signed_url = cloudinary.utils.cloudinary_url(
             after_upload, **options)[0]
         return signed_url

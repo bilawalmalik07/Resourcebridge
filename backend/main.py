@@ -305,8 +305,7 @@ def get_view_url(
     ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
-    signed_url = cloudinary_service.get_signed_download_url(doc.file_url)
-    return {"url": signed_url}
+    return {"url": doc.file_url}
 
 
 # ─── Reminders ─────────────────────────────────────────────────────────────────
