@@ -289,7 +289,10 @@ def delete_document(
     db.commit()
 
 
-# ─── View URL + File Proxy (all file types) ────────────────────────────────────
+# ─── View URL + File Proxy ─────────────────────────────────────────────────────
+
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp",
+              ".gif", ".tiff", ".tif", ".bmp", ".heic", ".heif"}
 
 MIME_MAP = {
     ".pdf":  "application/pdf",
@@ -311,9 +314,6 @@ MIME_MAP = {
     ".csv":  "text/csv",
 }
 
-INLINE_EXTS = {".pdf", ".png", ".jpg", ".jpeg",
-               ".webp", ".gif", ".tiff", ".tif", ".bmp"}
-
 
 @app.get("/api/documents/{doc_id}/view-url")
 def get_view_url(
@@ -328,10 +328,19 @@ def get_view_url(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    # All file types go through our proxy — proven reliable for both PDFs and images
-    token = security.create_access_token(data={"sub": current_user.username})
-    base = os.getenv("APP_BASE_URL", "").rstrip("/")
-    return {"url": f"{base}/api/documents/{doc_id}/proxy-file?token={token}"}
+    url_path = doc.file_url.split("?")[0]
+    ext = Path(url_path).suffix.lower()
+
+    if ext in IMAGE_EXTS:
+        # Images: serve directly from Cloudinary — clean URL, fast, no proxy needed
+        # Cloudinary image resource_type is always publicly accessible
+        return {"url": doc.file_url}
+    else:
+        # PDFs and docs: route through proxy to bypass Cloudinary raw delivery blocks
+        token = security.create_access_token(
+            data={"sub": current_user.username})
+        base = os.getenv("APP_BASE_URL", "").rstrip("/")
+        return {"url": f"{base}/api/documents/{doc_id}/proxy-file?token={token}"}
 
 
 @app.get("/api/documents/{doc_id}/proxy-file")
@@ -340,7 +349,7 @@ def proxy_file(
     token: str,
     db: Session = Depends(get_db),
 ):
-    """Stream any file type through our server with correct Content-Type and Content-Disposition."""
+    """Stream PDFs and docs through our server with correct Content-Type and Content-Disposition."""
     import re
     current_user = security.get_current_user(token=token, db=db)
 
@@ -368,7 +377,7 @@ def proxy_file(
     clean_name = re.sub(
         r"_[a-zA-Z0-9]{6,}(\.[^.]+)$", r"\1", raw_name) if ext else raw_name
 
-    disposition = f'inline; filename="{clean_name}"' if ext in INLINE_EXTS else f'attachment; filename="{clean_name}"'
+    disposition = f'inline; filename="{clean_name}"' if ext == ".pdf" else f'attachment; filename="{clean_name}"'
 
     return StreamingResponse(
         io.BytesIO(resp.content),
