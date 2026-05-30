@@ -50,6 +50,8 @@ export default function Dashboard({ onLogout }) {
   const [emergencyCategoryFilter, setEmergencyCategoryFilter] = useState('All');
   const [packetGenerated, setPacketGenerated] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // To-Do list state (persisted to localStorage per user)
   const [showTodo, setShowTodo] = useState(false);
@@ -191,6 +193,18 @@ export default function Dashboard({ onLogout }) {
       if (selectedDoc?.id === doc.id) setSelectedDoc(null);
     } catch (err) {
       console.error('Error deleting document:', err);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all(selectedIds.map(id => API.delete(`/api/documents/${id}`)));
+      setDocuments(prev => prev.filter(d => !selectedIds.includes(d.id)));
+      if (selectedDoc && selectedIds.includes(selectedDoc.id)) setSelectedDoc(null);
+      setSelectedIds([]);
+      setSelectMode(false);
+    } catch (err) {
+      console.error('Bulk delete error:', err);
     }
   };
 
@@ -743,6 +757,36 @@ export default function Dashboard({ onLogout }) {
               </div>
 
               {/* Document Grid */}
+              {/* Select mode toolbar */}
+              {filteredDocs.length > 0 && (
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    onClick={() => { setSelectMode(s => !s); setSelectedIds([]); }}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${selectMode ? 'bg-red-50 text-red-600 border-red-200' : 'bg-stone-100 text-stone-600 border-stone-200 hover:border-stone-300'}`}
+                  >
+                    {selectMode ? 'Cancel' : 'Select'}
+                  </button>
+                  {selectMode && (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedIds(selectedIds.length === filteredDocs.length ? [] : filteredDocs.map(d => d.id))}
+                        className="text-xs text-blue-600 hover:underline font-semibold"
+                      >
+                        {selectedIds.length === filteredDocs.length ? 'Deselect All' : 'Select All'}
+                      </button>
+                      <button
+                        onClick={handleBulkDelete}
+                        disabled={selectedIds.length === 0}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-40"
+                      >
+                        <Trash2 size={12} />
+                        Delete ({selectedIds.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {filteredDocs.length === 0 ? (
                 <div className="text-center py-20 text-stone-400">
                   <FileText size={44} className="mx-auto mb-3 text-stone-300" />
@@ -751,19 +795,39 @@ export default function Dashboard({ onLogout }) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {filteredDocs.map(doc => (
+                  {filteredDocs.map(doc => {
+                    const isChecked = selectedIds.includes(doc.id);
+                    return (
                     <div
                       key={doc.id}
-                      onClick={() => setSelectedDoc(doc)}
-                      className={`p-5 bg-white border rounded-2xl cursor-pointer hover:shadow-md transition shadow-sm relative group ${selectedDoc?.id === doc.id ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-stone-200'}`}
+                      onClick={() => {
+                        if (selectMode) {
+                          setSelectedIds(prev => isChecked ? prev.filter(id => id !== doc.id) : [...prev, doc.id]);
+                        } else {
+                          setSelectedDoc(doc);
+                        }
+                      }}
+                      className={`p-5 bg-white border rounded-2xl cursor-pointer hover:shadow-md transition shadow-sm relative group ${
+                        selectMode && isChecked ? 'border-red-400 ring-2 ring-red-400/20 bg-red-50' :
+                        !selectMode && selectedDoc?.id === doc.id ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-stone-200'
+                      }`}
                     >
+                      {selectMode && (
+                        <div className={`absolute top-3 left-3 w-5 h-5 rounded-md border-2 flex items-center justify-center transition ${isChecked ? 'bg-red-600 border-red-600' : 'border-stone-300 bg-white'}`}>
+                          {isChecked && (
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      )}
                       {doc.is_emergency && (
                         <div className="absolute top-3 right-3">
                           <AlertTriangle size={15} className="text-red-500" />
                         </div>
                       )}
                       <div className="flex items-start justify-between">
-                        <div className="bg-blue-50 p-2.5 rounded-xl text-blue-600"><FileText size={20} /></div>
+                        <div className={`bg-blue-50 p-2.5 rounded-xl text-blue-600 ${selectMode ? 'ml-6' : ''}`}><FileText size={20} /></div>
                         <span className="text-xs font-semibold px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full mr-5">
                           {getCategoryLabel(doc.category)}
                         </span>
@@ -774,7 +838,8 @@ export default function Dashboard({ onLogout }) {
                         {getSummary(doc) || 'Click to view AI analysis...'}
                       </p>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
