@@ -468,7 +468,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">File (PDF or Image)</label>
+                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">File (PDF, Image or Docs)</label>
                 <input
                   ref={fileInputRef}
                   type="file"

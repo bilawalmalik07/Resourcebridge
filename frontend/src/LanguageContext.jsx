@@ -97,7 +97,7 @@ export const translations = {
     // Errors
     uploadError: 'Error uploading document. Please try again.',
     fileTooLarge: 'File too large. Maximum size is 20MB.',
-    unsupportedType: 'Unsupported file type. Please upload a PDF or image.',
+    unsupportedType: 'Unsupported file type. Please upload a PDF Image or Document.',
   },
 
   es: {
