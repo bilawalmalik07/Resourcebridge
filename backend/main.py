@@ -179,12 +179,10 @@ async def upload_file(
     folder = f"resourcebridge/user_{current_user.id}"
     original_filename = file.filename or "document"
 
-    # Upload to Cloudinary
     file_url = cloudinary_service.upload_file_to_cloudinary(
         file_bytes, original_filename, folder=folder
     )
 
-    # Process AI directly from bytes — no re-download needed, avoids 401 on raw URLs
     ai_result = ai_service.process_document_from_bytes(
         file_bytes, original_filename)
 
@@ -204,7 +202,6 @@ def create_document(
     current_user: models.User = Depends(security.get_current_user)
 ):
     print(f"Saving: {doc_in.title}")
-    # ai_result is always pre-computed at upload time — never re-download from Cloudinary
     ai = doc_in.ai_result or {
         "ocr_text": "Document saved. Re-upload to process with AI.",
         "ai_summary": "Document saved. Re-upload to process with AI.",
@@ -294,7 +291,10 @@ def delete_document(
     db.commit()
 
 
-# ─── File Proxy (replaces direct signed URL — fixes PDF "blocked for delivery") ─
+# ─── View URL / File Proxy ─────────────────────────────────────────────────────
+
+IMAGE_EXTS = {".png", ".jpg", ".jpeg",
+              ".webp", ".gif", ".tiff", ".tif", ".bmp"}
 
 MIME_MAP = {
     ".pdf":  "application/pdf",
@@ -316,10 +316,6 @@ MIME_MAP = {
     ".csv":  "text/csv",
 }
 
-# File types that open inline in the browser; everything else is a download attachment
-INLINE_EXTS = {".pdf", ".png", ".jpg", ".jpeg",
-               ".webp", ".gif", ".tiff", ".tif", ".bmp"}
-
 
 @app.get("/api/documents/{doc_id}/view-url")
 def get_view_url(
@@ -327,8 +323,6 @@ def get_view_url(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
-    """Return a proxy URL through our own server so PDFs and raw files are never served
-    directly from Cloudinary (which blocks raw resource delivery by default)."""
     doc = db.query(models.Document).filter(
         models.Document.id == doc_id,
         models.Document.owner_id == current_user.id
@@ -336,10 +330,20 @@ def get_view_url(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    # Issue a short-lived token so the proxy endpoint can auth without a header
-    token = security.create_access_token(data={"sub": current_user.username})
-    base = os.getenv("APP_BASE_URL", "").rstrip("/")
-    return {"url": f"{base}/api/documents/{doc_id}/proxy-file?token={token}"}
+    # Detect file type from stored URL
+    url_path = doc.file_url.split("?")[0]
+    ext = Path(url_path).suffix.lower()
+
+    if ext in IMAGE_EXTS:
+        # Images: open directly via Cloudinary — no proxy needed, they work fine
+        signed_url = cloudinary_service.get_signed_download_url(doc.file_url)
+        return {"url": signed_url}
+    else:
+        # PDFs and docs: route through our proxy to avoid Cloudinary delivery blocks
+        token = security.create_access_token(
+            data={"sub": current_user.username})
+        base = os.getenv("APP_BASE_URL", "").rstrip("/")
+        return {"url": f"{base}/api/documents/{doc_id}/proxy-file?token={token}"}
 
 
 @app.get("/api/documents/{doc_id}/proxy-file")
@@ -348,11 +352,8 @@ def proxy_file(
     token: str,
     db: Session = Depends(get_db),
 ):
-    """Stream the file through our server with the correct Content-Type and
-    Content-Disposition so PDFs open in the browser and other files download
-    with their real filename — regardless of Cloudinary delivery restrictions."""
-
-    # Authenticate via query-param token (no Authorization header available on direct open)
+    """Stream PDFs and non-image files through our server with correct headers."""
+    import re
     current_user = security.get_current_user(token=token, db=db)
 
     doc = db.query(models.Document).filter(
@@ -370,23 +371,17 @@ def proxy_file(
         raise HTTPException(
             status_code=502, detail=f"Could not fetch file: {e}")
 
-    # Determine extension from the stored URL (strip query params first)
     url_path = doc.file_url.split("?")[0]
     ext = Path(url_path).suffix.lower()
     content_type = MIME_MAP.get(ext, resp.headers.get(
         "Content-Type", "application/octet-stream"))
 
-    # Build a clean filename from the URL path
     raw_name = url_path.split("/")[-1]
-    # Cloudinary appends a unique suffix — strip it if it looks like _<alphanum> before the ext
-    import re
     clean_name = re.sub(
         r"_[a-zA-Z0-9]{6,}(\.[^.]+)$", r"\1", raw_name) if ext else raw_name
 
-    if ext in INLINE_EXTS:
-        disposition = f'inline; filename="{clean_name}"'
-    else:
-        disposition = f'attachment; filename="{clean_name}"'
+    # PDFs open inline; everything else downloads
+    disposition = f'inline; filename="{clean_name}"' if ext == ".pdf" else f'attachment; filename="{clean_name}"'
 
     return StreamingResponse(
         io.BytesIO(resp.content),
