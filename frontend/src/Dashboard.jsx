@@ -583,7 +583,7 @@ export default function Dashboard({ onLogout }) {
                     <Circle size={18} />
                   </button>
                   <span className="flex-1 text-sm text-stone-700">{todo.text}</span>
-                  <button onClick={() => deleteTodo(todo.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
+                  <button onClick={() => deleteTodo(todo.id)} className="opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -598,7 +598,7 @@ export default function Dashboard({ onLogout }) {
                         <CircleCheck size={18} />
                       </button>
                       <span className="flex-1 text-sm text-stone-500 line-through">{todo.text}</span>
-                      <button onClick={() => deleteTodo(todo.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
+                      <button onClick={() => deleteTodo(todo.id)} className="opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -647,12 +647,14 @@ export default function Dashboard({ onLogout }) {
                 <input
                   type="date"
                   className="flex-1 px-3 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white text-stone-600"
+                  style={{ colorScheme: 'light' }}
                   value={reminderDate}
                   onChange={e => setReminderDate(e.target.value)}
                 />
                 <input
                   type="time"
                   className="flex-1 px-3 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white text-stone-600"
+                  style={{ colorScheme: 'light' }}
                   value={reminderTime}
                   onChange={e => setReminderTime(e.target.value)}
                 />
@@ -688,7 +690,7 @@ export default function Dashboard({ onLogout }) {
                         {r.sent ? '✓ Email sent · ' : overdue ? '⚠ Overdue · ' : ''}{formatReminderDate(r.remind_at)}
                       </p>
                     </div>
-                    <button onClick={() => deleteReminder(r.id)} className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0 mt-0.5">
+                    <button onClick={() => deleteReminder(r.id)} className="opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0 mt-0.5">
                       <Trash2 size={14} />
                     </button>
                   </div>
