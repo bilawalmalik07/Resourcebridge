@@ -132,11 +132,21 @@ export default function Dashboard({ onLogout }) {
 
 
   const handleViewOriginal = async (doc) => {
+    const url = doc.file_url || '';
+    const ext = url.split('?')[0].split('.').pop().toLowerCase();
+    const officeExts = ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt'];
+    if (officeExts.includes(ext)) {
+      // Google Docs viewer renders Office files inline on all devices
+      const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+      window.open(viewerUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    // PDF and images open natively — use signed URL if available
     try {
       const res = await API.get(`/api/documents/${doc.id}/view-url`);
       window.open(res.data.url, '_blank', 'noopener,noreferrer');
     } catch {
-      window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -291,7 +301,13 @@ export default function Dashboard({ onLogout }) {
                   ${item.deadline ? `<span class="deadline">· ${item.deadline}</span>` : ''}
                 </div>
               `).join('')}
-              <a class="view-link" href="${doc.file_url}" target="_blank">View Original File →</a>
+              <a class="view-link" href="${(() => {
+                const ext = doc.file_url.split('?')[0].split('.').pop().toLowerCase();
+                const officeExts = ['docx','doc','xlsx','xls','pptx','ppt'];
+                return officeExts.includes(ext)
+                  ? 'https://docs.google.com/viewer?url=' + encodeURIComponent(doc.file_url) + '&embedded=true'
+                  : doc.file_url;
+              })()}" target="_blank">View Original File →</a>
             </div>
           `).join('')}
         </body>
