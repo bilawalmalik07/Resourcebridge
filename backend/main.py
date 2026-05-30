@@ -291,7 +291,7 @@ def delete_document(
     db.commit()
 
 
-# ─── Signed View URL ───────────────────────────────────────────────────────────
+# ─── File Proxy ────────────────────────────────────────────────────────────────
 
 @app.get("/api/documents/{doc_id}/view-url")
 def get_view_url(
@@ -305,7 +305,38 @@ def get_view_url(
     ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
-    return {"url": doc.file_url}
+    return {"url": f"/api/documents/{doc_id}/file"}
+
+
+@app.get("/api/documents/{doc_id}/file")
+def proxy_file(
+    doc_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_user)
+):
+    import requests as req
+    from fastapi.responses import StreamingResponse
+    import io
+
+    doc = db.query(models.Document).filter(
+        models.Document.id == doc_id,
+        models.Document.owner_id == current_user.id
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    signed_url = cloudinary_service.get_signed_download_url(doc.file_url)
+    resp = req.get(signed_url, timeout=30)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="Could not fetch file.")
+
+    content_type = resp.headers.get("Content-Type", "application/octet-stream")
+    filename = doc.title or "document"
+    return StreamingResponse(
+        io.BytesIO(resp.content),
+        media_type=content_type,
+        headers={"Content-Disposition": f'inline; filename="{filename}"'}
+    )
 
 
 # ─── Reminders ─────────────────────────────────────────────────────────────────
