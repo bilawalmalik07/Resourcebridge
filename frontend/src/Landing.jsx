@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from './LanguageContext';
 import { Shield, Globe, Zap, AlertTriangle, ArrowRight, FileText, ListTodo, Bell } from 'lucide-react';
 
-export default function Landing({ onGetStarted }) {
+export default function Landing({ onGetStarted, darkMode, toggleDark }) {
   const { t, toggle, lang } = useLanguage();
 
   const features = [
@@ -15,20 +15,30 @@ export default function Landing({ onGetStarted }) {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 font-sans">
       {/* Nav */}
-      <nav className="fixed top-0 w-full z-50 bg-stone-50/90 backdrop-blur border-b border-stone-200">
+      <nav className="fixed top-0 w-full z-50 bg-stone-50/90 dark:bg-stone-950/90 backdrop-blur border-b border-stone-200 dark:border-stone-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
               <FileText size={16} className="text-white" />
             </div>
-            <span className="font-bold text-stone-900 text-lg tracking-tight">{t.appName}</span>
+            <span className="font-bold text-stone-900 dark:text-white text-lg tracking-tight">{t.appName}</span>
           </div>
           <div className="flex items-center space-x-3">
             <button
+              onClick={toggleDark}
+              className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-300 dark:border-stone-700"
+            >
+              {darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+              )}
+            </button>
+            <button
               onClick={toggle}
-              className="text-sm font-medium text-stone-500 hover:text-stone-800 border border-stone-300 px-3 py-1.5 rounded-lg transition hover:bg-stone-100"
+              className="text-sm font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 border border-stone-300 dark:border-stone-700 px-3 py-1.5 rounded-lg transition hover:bg-stone-100 dark:hover:bg-stone-800"
             >
               {t.language}
             </button>
@@ -55,10 +65,10 @@ export default function Landing({ onGetStarted }) {
             <Globe size={13} />
             <span>{lang === 'en' ? 'English & Spanish Support' : 'Soporte en Inglés y Español'}</span>
           </div>
-          <h1 className="text-5xl sm:text-6xl font-black text-stone-900 leading-tight tracking-tight mb-6 whitespace-pre-line">
+          <h1 className="text-5xl sm:text-6xl font-black text-stone-900 dark:text-white leading-tight tracking-tight mb-6 whitespace-pre-line">
             {t.heroTitle}
           </h1>
-          <p className="text-xl text-stone-500 max-w-2xl mx-auto leading-relaxed mb-10">
+          <p className="text-xl text-stone-500 dark:text-stone-400 max-w-2xl mx-auto leading-relaxed mb-10">
             {t.heroSubtitle}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -74,16 +84,16 @@ export default function Landing({ onGetStarted }) {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 px-6 bg-white border-y border-stone-200">
+      <section className="py-20 px-6 bg-white dark:bg-stone-900 border-y border-stone-200 dark:border-stone-800">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {features.map(({ icon: Icon, title, desc, color, bg }) => (
-              <div key={title} className="p-7 rounded-2xl border border-stone-100 bg-stone-50 hover:shadow-md transition">
+              <div key={title} className="p-7 rounded-2xl border border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50 hover:shadow-md transition">
                 <div className={`w-12 h-12 ${bg} rounded-xl flex items-center justify-center mb-4`}>
                   <Icon size={22} className={color} />
                 </div>
-                <h3 className="font-bold text-stone-900 text-lg mb-2">{title}</h3>
-                <p className="text-stone-500 text-sm leading-relaxed">{desc}</p>
+                <h3 className="font-bold text-stone-900 dark:text-white text-lg mb-2">{title}</h3>
+                <p className="text-stone-500 dark:text-stone-400 text-sm leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -93,8 +103,8 @@ export default function Landing({ onGetStarted }) {
       {/* CTA */}
       <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-4xl font-black text-stone-900 mb-4 tracking-tight">{t.ctaTitle}</h2>
-          <p className="text-stone-500 mb-8 text-lg">{t.ctaSubtitle}</p>
+          <h2 className="text-4xl font-black text-stone-900 dark:text-white mb-4 tracking-tight">{t.ctaTitle}</h2>
+          <p className="text-stone-500 dark:text-stone-400 mb-8 text-lg">{t.ctaSubtitle}</p>
           <button
             onClick={onGetStarted}
             className="bg-blue-700 text-white font-semibold px-8 py-4 rounded-xl hover:bg-blue-800 transition shadow-lg text-base"
@@ -105,7 +115,7 @@ export default function Landing({ onGetStarted }) {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-stone-200 py-8 px-6 text-center text-stone-400 text-sm">
+      <footer className="border-t border-stone-200 dark:border-stone-800 py-8 px-6 text-center text-stone-400 dark:text-stone-600 text-sm">
         <p>© 2026 ResourceBridge — Technology for Community Stability</p>
       </footer>
     </div>

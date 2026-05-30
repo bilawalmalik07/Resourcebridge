@@ -16,7 +16,7 @@ const validateUsername = (u) => {
   return null;
 };
 
-export default function Login({ setToken }) {
+export default function Login({ setToken, darkMode, toggleDark }) {
   const { t, toggle } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState('');
@@ -82,29 +82,29 @@ export default function Login({ setToken }) {
 
   if (verifyStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950 px-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-700 rounded-2xl mb-4 shadow-lg">
               <FileText size={24} className="text-white" />
             </div>
-            <h1 className="text-3xl font-black text-stone-900 tracking-tight">{t.appName}</h1>
+            <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</h1>
           </div>
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-stone-100">
-            <h2 className="text-xl font-bold text-stone-800 mb-1">Check your email</h2>
-            <p className="text-sm text-stone-500 mb-6">
-              We sent a 6-digit code to <span className="font-semibold text-stone-700">{pendingEmail}</span>. Enter it below to confirm your account.
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-xl p-8 border border-stone-100 dark:border-stone-800">
+            <h2 className="text-xl font-bold text-stone-800 dark:text-white mb-1">Check your email</h2>
+            <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">
+              We sent a 6-digit code to <span className="font-semibold text-stone-700 dark:text-stone-200">{pendingEmail}</span>. Enter it below to confirm your account.
             </p>
             {codeError && (
               <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-4 border border-red-100">{codeError}</div>
             )}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-stone-700 mb-1.5">Verification Code</label>
+              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">Verification Code</label>
               <input
                 type="text"
                 maxLength={6}
                 placeholder="000000"
-                className="w-full px-4 py-4 border-2 border-stone-200 rounded-xl focus:outline-none focus:border-blue-500 bg-stone-50 text-2xl font-bold text-center tracking-widest transition"
+                className="w-full px-4 py-4 border-2 border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:border-blue-500 bg-stone-50 dark:bg-stone-800 dark:text-stone-100 text-2xl font-bold text-center tracking-widest transition"
                 value={codeInput}
                 onChange={e => { setCodeInput(e.target.value.replace(/\D/g, '')); setCodeError(''); }}
                 onKeyDown={e => e.key === 'Enter' && handleVerifyCode()}
@@ -132,17 +132,17 @@ export default function Login({ setToken }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950 px-4">
 
       {/* ── Success Modal ── */}
       {successMsg && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100 text-center">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100 dark:border-stone-800 text-center">
             <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <FileText size={22} className="text-blue-700" />
             </div>
-            <h3 className="font-bold text-stone-900 text-lg mb-2">Account Created!</h3>
-            <p className="text-stone-500 text-sm mb-6">{successMsg}</p>
+            <h3 className="font-bold text-stone-900 dark:text-white text-lg mb-2">Account Created!</h3>
+            <p className="text-stone-500 dark:text-stone-400 text-sm mb-6">{successMsg}</p>
             <button
               onClick={() => setSuccessMsg('')}
               className="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl transition shadow-sm text-sm"
@@ -160,18 +160,28 @@ export default function Login({ setToken }) {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-700 rounded-2xl mb-4 shadow-lg">
             <FileText size={24} className="text-white" />
           </div>
-          <h1 className="text-3xl font-black text-stone-900 tracking-tight">{t.appName}</h1>
-          <p className="text-stone-500 mt-1 text-sm">{t.tagline}</p>
+          <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</h1>
+          <p className="text-stone-500 dark:text-stone-400 mt-1 text-sm">{t.tagline}</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-stone-100">
+        <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-xl p-8 border border-stone-100 dark:border-stone-800">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-stone-800">
+            <h2 className="text-xl font-bold text-stone-800 dark:text-white">
               {isSignUp ? t.signUp : t.signIn}
             </h2>
             <button
+              onClick={toggleDark}
+              className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-700"
+            >
+              {darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+              )}
+            </button>
+            <button
               onClick={toggle}
-              className="text-xs font-semibold text-stone-400 hover:text-blue-600 border border-stone-200 px-3 py-1 rounded-lg transition"
+              className="text-xs font-semibold text-stone-400 dark:text-stone-500 hover:text-blue-600 border border-stone-200 dark:border-stone-700 px-3 py-1 rounded-lg transition dark:hover:bg-stone-800"
             >
               {t.language}
             </button>
@@ -187,14 +197,14 @@ export default function Login({ setToken }) {
 
             {/* Username — type="text" so no @ required */}
             <div>
-              <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
                 Username
               </label>
               <input
                 type="text"
                 required
                 placeholder="Choose a username"
-                className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
+                className="w-full px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 dark:bg-stone-800 dark:text-stone-100 text-sm transition"
                 value={username}
                 onChange={e => { setUsername(e.target.value); if (isSignUp) setUsernameError(''); }}
               />
@@ -208,14 +218,14 @@ export default function Login({ setToken }) {
             {/* Email — only shown on sign up, fully optional */}
             {isSignUp && (
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
                   Email Address
                   <span className="ml-1.5 text-xs font-normal text-stone-400">(optional)</span>
                 </label>
                 <input
                   type="email"
                   placeholder="your@email.com"
-                  className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
+                  className="w-full px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 dark:bg-stone-800 dark:text-stone-100 text-sm transition"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                 />
@@ -224,7 +234,7 @@ export default function Login({ setToken }) {
 
             {/* Password with eye toggle */}
             <div>
-              <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+              <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
                 {t.passwordLabel}
               </label>
               <div className="relative">
@@ -232,7 +242,7 @@ export default function Login({ setToken }) {
                   type={showPassword ? 'text' : 'password'}
                   required
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 pr-11 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 text-sm transition"
+                  className="w-full px-4 py-3 pr-11 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-stone-50 dark:bg-stone-800 dark:text-stone-100 text-sm transition"
                   value={password}
                   onChange={e => { setPassword(e.target.value); if (isSignUp) setPasswordError(''); }}
                 />
