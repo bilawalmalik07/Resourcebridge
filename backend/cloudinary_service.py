@@ -46,13 +46,11 @@ def get_signed_download_url(file_url: str) -> str:
     Given a stored Cloudinary URL, return a short-lived signed version for downloading.
     Used by ai_service to bypass 401 on raw resources.
     """
-    # Extract public_id and resource_type from the URL
-    # URL format: https://res.cloudinary.com/{cloud}/raw/upload/v.../folder/file.pdf
     import time
     try:
         parts = file_url.split("/upload/", 1)
         if len(parts) != 2:
-            return file_url  # not a cloudinary URL, return as-is
+            return file_url
 
         resource_type = "raw" if "/raw/" in file_url else "image"
         # Strip version prefix like "v1234567890/"
@@ -60,15 +58,20 @@ def get_signed_download_url(file_url: str) -> str:
         if after_upload.startswith("v") and "/" in after_upload:
             after_upload = after_upload.split("/", 1)[1]
 
-        signed_url = cloudinary.utils.cloudinary_url(
-            after_upload,
+        options = dict(
             resource_type=resource_type,
             type="upload",
             secure=True,
             sign_url=True,
             # 5 min — enough to download & process
             expires_at=int(time.time()) + 300,
-        )[0]
+        )
+
+        if resource_type == "raw":
+            options["flags"] = "attachment:false"
+
+        signed_url = cloudinary.utils.cloudinary_url(
+            after_upload, **options)[0]
         return signed_url
     except Exception as e:
         print(f"Could not generate signed URL: {e}, falling back to original")
