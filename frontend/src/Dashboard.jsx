@@ -29,6 +29,16 @@ const PRIORITY_STYLES = {
 
 export default function Dashboard({ onLogout }) {
   const { t, toggle, lang } = useLanguage();
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('rb_dark') === 'true');
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('rb_dark', darkMode);
+  }, [darkMode]);
   const [documents, setDocuments] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [search, setSearch] = useState('');
@@ -338,25 +348,25 @@ export default function Dashboard({ onLogout }) {
   const getSummary = (doc) => lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary;
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 font-sans">
       {/* Header */}
-      <nav className="bg-white border-b border-stone-200 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+      <nav className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
         <div className="flex items-center space-x-2.5">
           <div className="w-9 h-9 bg-blue-700 rounded-xl flex items-center justify-center shadow">
             <FileText size={17} className="text-white" />
           </div>
-          <span className="text-lg font-black text-stone-900 tracking-tight">{t.appName}</span>
+          <span className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</span>
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={toggle}
-            className="text-xs font-semibold text-stone-500 border border-stone-200 px-3 py-1.5 rounded-lg hover:bg-stone-50 transition"
+            className="text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition"
           >
             {t.language}
           </button>
           <button
             onClick={() => setShowTodo(true)}
-            className="hidden sm:flex items-center space-x-1.5 bg-white text-stone-700 border border-stone-200 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 transition shadow-sm relative"
+            className="hidden sm:flex items-center space-x-1.5 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-sm relative"
           >
             <ListTodo size={15} />
             <span>To-Do</span>
@@ -368,7 +378,7 @@ export default function Dashboard({ onLogout }) {
           </button>
           <button
             onClick={() => setShowReminders(true)}
-            className="hidden sm:flex items-center space-x-1.5 bg-white text-stone-700 border border-stone-200 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 transition shadow-sm relative"
+            className="hidden sm:flex items-center space-x-1.5 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-sm relative"
           >
             <Bell size={15} />
             <span>Reminders</span>
@@ -387,7 +397,7 @@ export default function Dashboard({ onLogout }) {
           </button>
           <button
             onClick={() => setShowTodo(true)}
-            className="sm:hidden relative flex items-center justify-center text-stone-500 hover:text-blue-700 transition px-2 py-2 rounded-lg hover:bg-stone-100"
+            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-blue-700 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <ListTodo size={18} />
             {todos.filter(t => !t.done).length > 0 && (
@@ -398,7 +408,7 @@ export default function Dashboard({ onLogout }) {
           </button>
           <button
             onClick={() => setShowReminders(true)}
-            className="sm:hidden relative flex items-center justify-center text-stone-500 hover:text-amber-600 transition px-2 py-2 rounded-lg hover:bg-stone-100"
+            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-amber-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <Bell size={18} />
             {reminders.length > 0 && (
@@ -408,8 +418,19 @@ export default function Dashboard({ onLogout }) {
             )}
           </button>
           <button
+            onClick={() => setDarkMode(d => !d)}
+            className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+            title={darkMode ? 'Light mode' : 'Dark mode'}
+          >
+            {darkMode ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            )}
+          </button>
+          <button
             onClick={onLogout}
-            className="flex items-center space-x-1.5 text-stone-400 hover:text-red-600 transition px-2 py-2 rounded-lg hover:bg-stone-100"
+            className="flex items-center space-x-1.5 text-stone-400 hover:text-red-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <LogOut size={17} />
           </button>
@@ -419,9 +440,9 @@ export default function Dashboard({ onLogout }) {
       {/* Upload Panel Modal */}
       {showUploadPanel && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowUploadPanel(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-stone-800 text-lg">{t.uploadTitle}</h3>
+              <h3 className="font-bold text-stone-800 dark:text-white text-lg">{t.uploadTitle}</h3>
               <button onClick={() => setShowUploadPanel(false)} className="text-stone-400 hover:text-stone-600"><X size={20} /></button>
             </div>
 
@@ -431,21 +452,21 @@ export default function Dashboard({ onLogout }) {
 
             <form onSubmit={handleFileUpload} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-1">{t.docTitle}</label>
+                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">{t.docTitle}</label>
                 <input
                   type="text"
                   required
                   placeholder={t.docTitlePlaceholder}
-                  className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-stone-50"
+                  className="w-full px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-stone-50 dark:bg-stone-800 dark:text-stone-100"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-1">{t.category}</label>
+                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">{t.category}</label>
                 <select
-                  className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-stone-50"
+                  className="w-full px-4 py-3 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-stone-50 dark:bg-stone-800 dark:text-stone-100"
                   value={category}
                   onChange={e => setCategory(e.target.value)}
                 >
@@ -456,17 +477,17 @@ export default function Dashboard({ onLogout }) {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-stone-700 mb-1">File (PDF or Image)</label>
+                <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1">File (PDF or Image)</label>
                 <input
                   ref={fileInputRef}
                   type="file"
                   required
                   accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.py"
-                  className="w-full text-sm text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                  className="w-full text-sm text-stone-500 dark:text-stone-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                 />
               </div>
 
-              <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl border border-stone-200 hover:bg-stone-50">
+              <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-xl border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800">
                 <input
                   type="checkbox"
                   className="w-4 h-4 rounded accent-red-600"
@@ -475,7 +496,7 @@ export default function Dashboard({ onLogout }) {
                 />
                 <div className="flex items-center space-x-2 text-sm">
                   <AlertTriangle size={15} className="text-red-500" />
-                  <span className="font-medium text-stone-700">{t.markEmergency}</span>
+                  <span className="font-medium text-stone-700 dark:text-stone-300">{t.markEmergency}</span>
                 </div>
               </label>
 
@@ -494,21 +515,21 @@ export default function Dashboard({ onLogout }) {
       {/* ── Delete Confirm Modal ── */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100 dark:border-stone-800">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Trash2 size={18} className="text-red-500" />
               </div>
               <div>
-                <h3 className="font-bold text-stone-900 text-base">Delete document?</h3>
-                <p className="text-stone-500 text-sm mt-0.5 line-clamp-1">"{deleteConfirm.title}"</p>
+                <h3 className="font-bold text-stone-900 dark:text-white dark:text-white text-base">Delete document?</h3>
+                <p className="text-stone-500 dark:text-stone-400 text-sm mt-0.5 line-clamp-1">"{deleteConfirm.title}"</p>
               </div>
             </div>
-            <p className="text-sm text-stone-500 mb-6">This action cannot be undone.</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400 dark:text-stone-400 mb-6">This action cannot be undone.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 py-2.5 border border-stone-200 rounded-xl text-sm font-semibold text-stone-600 hover:bg-stone-50 transition"
+                className="flex-1 py-2.5 border border-stone-200 dark:border-stone-700 rounded-xl text-sm font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-800 transition"
               >
                 Cancel
               </button>
@@ -526,13 +547,13 @@ export default function Dashboard({ onLogout }) {
       {/* ── No Emergency Selection Modal ── */}
       {noEmergencyModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100">
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100 dark:border-stone-800">
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
                 <AlertTriangle size={18} className="text-blue-600" />
               </div>
               <div>
-                <h3 className="font-bold text-stone-900 text-base">No documents selected</h3>
+                <h3 className="font-bold text-stone-900 dark:text-white dark:text-white text-base">No documents selected</h3>
                 <p className="text-stone-500 text-sm mt-0.5">Please select at least one valid document to include in the packet.</p>
               </div>
             </div>
@@ -549,27 +570,27 @@ export default function Dashboard({ onLogout }) {
       {/* ── To-Do List Modal ── */}
       {showTodo && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowTodo(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-stone-800">
               <div className="flex items-center space-x-3">
                 <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
                   <ListTodo size={18} className="text-blue-700" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-stone-900 text-base">To-Do List</h3>
-                  <p className="text-xs text-stone-400">{todos.filter(t => !t.done).length} remaining</p>
+                  <h3 className="font-bold text-stone-900 dark:text-white dark:text-white text-base">To-Do List</h3>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">{todos.filter(t => !t.done).length} remaining</p>
                 </div>
               </div>
-              <button onClick={() => setShowTodo(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition"><X size={18} /></button>
+              <button onClick={() => setShowTodo(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X size={18} /></button>
             </div>
             {/* Add input */}
-            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50">
+            <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
               <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Add a new task..."
-                  className="flex-1 px-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  className="flex-1 px-4 py-2.5 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-stone-800 dark:text-stone-100"
                   value={todoInput}
                   onChange={e => setTodoInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addTodo()}
@@ -594,11 +615,11 @@ export default function Dashboard({ onLogout }) {
               )}
               {/* Pending */}
               {todos.filter(t => !t.done).map(todo => (
-                <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 hover:border-blue-100 hover:bg-blue-50/30 group transition">
+                <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 dark:border-stone-800 hover:border-blue-100 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 group transition">
                   <button onClick={() => toggleTodo(todo.id)} className="flex-shrink-0 text-stone-300 hover:text-blue-600 transition">
                     <Circle size={18} />
                   </button>
-                  <span className="flex-1 text-sm text-stone-700">{todo.text}</span>
+                  <span className="flex-1 text-sm text-stone-700 dark:text-stone-300">{todo.text}</span>
                   <button onClick={() => deleteTodo(todo.id)} className="opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
                     <Trash2 size={14} />
                   </button>
@@ -609,11 +630,11 @@ export default function Dashboard({ onLogout }) {
                 <>
                   <p className="text-xs font-bold text-stone-400 uppercase tracking-wider pt-2 pb-1">Completed</p>
                   {todos.filter(t => t.done).map(todo => (
-                    <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 group opacity-60">
+                    <div key={todo.id} className="flex items-center gap-3 p-3 rounded-xl border border-stone-100 dark:border-stone-800 group opacity-60">
                       <button onClick={() => toggleTodo(todo.id)} className="flex-shrink-0 text-emerald-500 hover:text-stone-400 transition">
                         <CircleCheck size={18} />
                       </button>
-                      <span className="flex-1 text-sm text-stone-500 line-through">{todo.text}</span>
+                      <span className="flex-1 text-sm text-stone-500 dark:text-stone-400 dark:text-stone-500 line-through">{todo.text}</span>
                       <button onClick={() => deleteTodo(todo.id)} className="opacity-100 text-stone-300 hover:text-red-500 transition flex-shrink-0">
                         <Trash2 size={14} />
                       </button>
@@ -623,8 +644,8 @@ export default function Dashboard({ onLogout }) {
               )}
             </div>
             {todos.filter(t => t.done).length > 0 && (
-              <div className="px-6 py-3 border-t border-stone-100">
-                <button onClick={() => saveTodos(todos.filter(t => !t.done))} className="text-xs text-stone-400 hover:text-red-500 transition font-medium">
+              <div className="px-6 py-3 border-t border-stone-100 dark:border-stone-800">
+                <button onClick={() => saveTodos(todos.filter(t => !t.done))} className="text-xs text-stone-400 dark:text-stone-500 hover:text-red-500 transition font-medium">
                   Clear completed
                 </button>
               </div>
@@ -636,40 +657,40 @@ export default function Dashboard({ onLogout }) {
       {/* ── Reminders Modal ── */}
       {showReminders && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowReminders(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-stone-100 dark:border-stone-800">
               <div className="flex items-center space-x-3">
                 <div className="w-9 h-9 bg-amber-50 rounded-xl flex items-center justify-center">
                   <BellRing size={18} className="text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-stone-900 text-base">Reminders</h3>
-                  <p className="text-xs text-stone-400">{reminders.length} reminder{reminders.length !== 1 ? 's' : ''}</p>
+                  <h3 className="font-bold text-stone-900 dark:text-white dark:text-white text-base">Reminders</h3>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">{reminders.length} reminder{reminders.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
-              <button onClick={() => setShowReminders(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 transition"><X size={18} /></button>
+              <button onClick={() => setShowReminders(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X size={18} /></button>
             </div>
             {/* Add form */}
-            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50 space-y-3">
+            <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50 space-y-3">
               <input
                 type="text"
                 placeholder="What do you need to remember?"
-                className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white"
+                className="w-full px-4 py-2.5 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white dark:bg-stone-800 dark:text-stone-100"
                 value={reminderText}
                 onChange={e => setReminderText(e.target.value)}
               />
               <div className="flex gap-2">
                 <input
                   type="date"
-                  className="flex-1 px-3 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white text-stone-600"
+                  className="flex-1 px-3 py-2.5 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300"
                   style={{ colorScheme: 'light' }}
                   value={reminderDate}
                   onChange={e => setReminderDate(e.target.value)}
                 />
                 <input
                   type="time"
-                  className="flex-1 px-3 py-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white text-stone-600"
+                  className="flex-1 px-3 py-2.5 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300"
                   style={{ colorScheme: 'light' }}
                   value={reminderTime}
                   onChange={e => setReminderTime(e.target.value)}
@@ -696,12 +717,12 @@ export default function Dashboard({ onLogout }) {
               {[...reminders].sort((a, b) => new Date(a.remind_at) - new Date(b.remind_at)).map(r => {
                 const overdue = isOverdue(r.remind_at);
                 return (
-                  <div key={r.id} className={`flex items-start gap-3 p-3.5 rounded-xl border group transition ${overdue ? 'border-red-100 bg-red-50/40' : 'border-stone-100 hover:border-amber-100 hover:bg-amber-50/30'}`}>
+                  <div key={r.id} className={`flex items-start gap-3 p-3.5 rounded-xl border group transition ${overdue ? 'border-red-100 bg-red-50/40 dark:border-red-900 dark:bg-red-950/40' : 'border-stone-100 dark:border-stone-800 hover:border-amber-100 hover:bg-amber-50/30 dark:hover:bg-amber-950/30'}`}>
                     <div className={`mt-0.5 flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${overdue ? 'bg-red-100' : 'bg-amber-50'}`}>
                       <Bell size={13} className={overdue ? 'text-red-500' : 'text-amber-500'} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-stone-800 font-medium leading-snug">{r.text}</p>
+                      <p className="text-sm text-stone-800 dark:text-stone-200 font-medium leading-snug">{r.text}</p>
                       <p className={`text-xs mt-0.5 font-medium ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
                         {r.sent ? '✓ Email sent · ' : overdue ? '⚠ Overdue · ' : ''}{formatReminderDate(r.remind_at)}
                       </p>
@@ -720,12 +741,12 @@ export default function Dashboard({ onLogout }) {
       <div className="max-w-7xl mx-auto px-4 py-6">
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-stone-100 p-1 rounded-xl w-fit mb-6">
+        <div className="flex space-x-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl w-fit mb-6">
           {['documents', 'emergency'].map(tab => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); if (tab === 'emergency') { fetchEmergencyDocs(); setPacketGenerated(false); } }}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${activeTab === tab ? 'bg-white shadow text-stone-900' : 'text-stone-500 hover:text-stone-700'}`}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${activeTab === tab ? 'bg-white dark:bg-stone-700 shadow text-stone-900 dark:text-white' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'}`}
             >
               {tab === 'documents' ? t.myDocuments : (
                 <span className="flex items-center space-x-1.5">
@@ -749,13 +770,13 @@ export default function Dashboard({ onLogout }) {
                   <input
                     type="text"
                     placeholder={t.searchPlaceholder}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
+                    className="w-full pl-11 pr-4 py-3 bg-white dark:bg-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
                 </div>
                 <select
-                  className="px-4 py-3 bg-white border border-stone-200 rounded-xl focus:outline-none text-sm shadow-sm text-stone-600"
+                  className="px-4 py-3 bg-white dark:bg-stone-900 dark:text-stone-300 border border-stone-200 dark:border-stone-700 rounded-xl focus:outline-none text-sm shadow-sm text-stone-600"
                   value={categoryFilter}
                   onChange={e => setCategoryFilter(e.target.value)}
                 >
@@ -803,9 +824,9 @@ export default function Dashboard({ onLogout }) {
               )}
 
               {filteredDocs.length === 0 ? (
-                <div className="text-center py-20 text-stone-400">
+                <div className="text-center py-20 text-stone-400 dark:text-stone-600">
                   <FileText size={44} className="mx-auto mb-3 text-stone-300" />
-                  <p className="font-medium text-stone-500">{t.noDocuments}</p>
+                  <p className="font-medium text-stone-500 dark:text-stone-400">{t.noDocuments}</p>
                   <p className="text-sm mt-1">{t.noDocumentsHint}</p>
                 </div>
               ) : (
@@ -822,9 +843,9 @@ export default function Dashboard({ onLogout }) {
                           setSelectedDoc(doc);
                         }
                       }}
-                      className={`p-5 bg-white border rounded-2xl cursor-pointer hover:shadow-md transition shadow-sm relative group ${
-                        selectMode && isChecked ? 'border-red-400 ring-2 ring-red-400/20 bg-red-50' :
-                        !selectMode && selectedDoc?.id === doc.id ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-stone-200'
+                      className={`p-5 bg-white dark:bg-stone-900 border rounded-2xl cursor-pointer hover:shadow-md transition shadow-sm relative group ${
+                        selectMode && isChecked ? 'border-red-400 ring-2 ring-red-400/20 bg-red-50 dark:bg-red-950' :
+                        !selectMode && selectedDoc?.id === doc.id ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-stone-200 dark:border-stone-700'
                       }`}
                     >
                       {selectMode && (
@@ -848,8 +869,8 @@ export default function Dashboard({ onLogout }) {
                         </span>
                       </div>
                       <h4 className="font-bold text-stone-800 mt-4 line-clamp-1 text-sm">{doc.title}</h4>
-                      <p className="text-xs text-stone-400 mt-1">{t.uploaded}: {formatDate(doc.created_at)}</p>
-                      <p className="text-sm text-stone-500 mt-2 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t.uploaded}: {formatDate(doc.created_at)}</p>
+                      <p className="text-sm text-stone-500 dark:text-stone-400 dark:text-stone-400 mt-2 line-clamp-2 leading-relaxed">
                         {getSummary(doc) || 'Click to view AI analysis...'}
                       </p>
                     </div>
@@ -883,8 +904,8 @@ export default function Dashboard({ onLogout }) {
                           <Sparkles size={13} />
                           <span className="text-xs font-bold uppercase tracking-wider">{t.aiSummary}</span>
                         </div>
-                        <h3 className="font-bold text-stone-900 text-base leading-tight truncate">{selectedDoc.title}</h3>
-                        <p className="text-xs text-stone-400 mt-0.5">{getCategoryLabel(selectedDoc.category)}</p>
+                        <h3 className="font-bold text-stone-900 dark:text-white dark:text-white text-base leading-tight truncate">{selectedDoc.title}</h3>
+                        <p className="text-xs text-stone-400 dark:text-stone-500 dark:text-stone-500 mt-0.5">{getCategoryLabel(selectedDoc.category)}</p>
                       </div>
                       <button
                         onClick={() => setSelectedDoc(null)}
@@ -920,17 +941,17 @@ export default function Dashboard({ onLogout }) {
                   {/* Scrollable content */}
                   <div className="p-5 space-y-5 overflow-y-auto flex-1">
                     <div>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
                         <Globe size={13} />
                         <span>{t.plainLanguage}</span>
                       </h4>
-                      <p className="text-sm text-stone-700 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100">
+                      <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed bg-stone-50 dark:bg-stone-800 p-4 rounded-xl border border-stone-100 dark:border-stone-700">
                         {getSummary(selectedDoc) || '—'}
                       </p>
                     </div>
                     {selectedDoc.action_items && selectedDoc.action_items.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
                           <CheckCircle size={13} />
                           <span>{t.actionItems}</span>
                         </h4>
@@ -955,11 +976,11 @@ export default function Dashboard({ onLogout }) {
                       </div>
                     )}
                     <div>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
                         <FileText size={13} />
                         <span>{t.extractedText}</span>
                       </h4>
-                      <pre className="text-xs text-stone-500 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+                      <pre className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed bg-stone-50 dark:bg-stone-800 p-4 rounded-xl border border-stone-100 dark:border-stone-700 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
                         {selectedDoc.ocr_text || '—'}
                       </pre>
                     </div>
@@ -971,17 +992,17 @@ export default function Dashboard({ onLogout }) {
             {/* Desktop: Sidebar (unchanged) */}
             <div className="hidden lg:block lg:col-span-1">
               {selectedDoc ? (
-                <div className="bg-white rounded-2xl border border-stone-200 shadow-sm sticky top-20 overflow-hidden">
+                <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm sticky top-20 overflow-hidden">
                   {/* Panel Header */}
-                  <div className="p-5 border-b border-stone-100 bg-stone-50">
+                  <div className="p-5 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-1.5 text-blue-600 mb-1">
                           <Sparkles size={13} />
                           <span className="text-xs font-bold uppercase tracking-wider">{t.aiSummary}</span>
                         </div>
-                        <h3 className="font-bold text-stone-900 text-base leading-tight truncate">{selectedDoc.title}</h3>
-                        <p className="text-xs text-stone-400 mt-0.5">{getCategoryLabel(selectedDoc.category)}</p>
+                        <h3 className="font-bold text-stone-900 dark:text-white dark:text-white text-base leading-tight truncate">{selectedDoc.title}</h3>
+                        <p className="text-xs text-stone-400 dark:text-stone-500 dark:text-stone-500 mt-0.5">{getCategoryLabel(selectedDoc.category)}</p>
                       </div>
                       <button
                         onClick={() => setSelectedDoc(null)}
@@ -1019,11 +1040,11 @@ export default function Dashboard({ onLogout }) {
                   <div className="p-5 space-y-5 max-h-[65vh] overflow-y-auto">
                     {/* Summary */}
                     <div>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
                         <Globe size={13} />
                         <span>{t.plainLanguage}</span>
                       </h4>
-                      <p className="text-sm text-stone-700 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100">
+                      <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed bg-stone-50 dark:bg-stone-800 p-4 rounded-xl border border-stone-100 dark:border-stone-700">
                         {getSummary(selectedDoc) || '—'}
                       </p>
                     </div>
@@ -1031,7 +1052,7 @@ export default function Dashboard({ onLogout }) {
                     {/* Action Items */}
                     {selectedDoc.action_items && selectedDoc.action_items.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                        <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
                           <CheckCircle size={13} />
                           <span>{t.actionItems}</span>
                         </h4>
@@ -1061,20 +1082,20 @@ export default function Dashboard({ onLogout }) {
 
                     {/* Extracted Text */}
                     <div>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
                         <FileText size={13} />
                         <span>{t.extractedText}</span>
                       </h4>
-                      <pre className="text-xs text-stone-500 leading-relaxed bg-stone-50 p-4 rounded-xl border border-stone-100 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
+                      <pre className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed bg-stone-50 dark:bg-stone-800 p-4 rounded-xl border border-stone-100 dark:border-stone-700 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
                         {selectedDoc.ocr_text || '—'}
                       </pre>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border border-dashed border-stone-200 rounded-2xl p-10 text-center flex flex-col items-center justify-center min-h-[280px]">
+                <div className="bg-white dark:bg-stone-900 border border-dashed border-stone-200 dark:border-stone-700 rounded-2xl p-10 text-center flex flex-col items-center justify-center min-h-[280px]">
                   <FileText size={40} className="mb-3 text-stone-200" />
-                  <p className="text-sm text-stone-400 font-medium">{t.selectDoc}</p>
+                  <p className="text-sm text-stone-400 dark:text-stone-500 font-medium">{t.selectDoc}</p>
                 </div>
               )}
             </div>
@@ -1093,14 +1114,14 @@ export default function Dashboard({ onLogout }) {
 
             {/* Controls — hidden when printing */}
             <div className="print:hidden">
-              <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-5">
+              <div className="bg-white dark:bg-stone-900 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-sm p-6 mb-5">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
                     <AlertTriangle size={20} className="text-red-500" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-stone-900">{t.emergencyTitle}</h2>
-                    <p className="text-sm text-stone-500">Select the documents you want in the packet, then generate.</p>
+                    <h2 className="font-bold text-stone-900 dark:text-white">{t.emergencyTitle}</h2>
+                    <p className="text-sm text-stone-500 dark:text-stone-400">Select the documents you want in the packet, then generate.</p>
                   </div>
                 </div>
 
@@ -1133,11 +1154,11 @@ export default function Dashboard({ onLogout }) {
                     <span className="text-stone-300">·</span>
                     <button
                       onClick={() => setSelectedPacketIds([])}
-                      className="text-xs text-stone-400 hover:underline font-semibold"
+                      className="text-xs text-stone-400 dark:text-stone-500 hover:underline font-semibold"
                     >
                       Deselect All
                     </button>
-                    <span className="ml-auto text-xs text-stone-400">
+                    <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
                       {selectedPacketIds.filter(id => filteredEmergencyDocs.find(d => d.id === id)).length} of {filteredEmergencyDocs.length} selected
                     </span>
                   </div>
@@ -1148,7 +1169,7 @@ export default function Dashboard({ onLogout }) {
               {filteredEmergencyDocs.length === 0 ? (
                 <div className="text-center py-16 text-stone-400">
                   <AlertTriangle size={40} className="mx-auto mb-3 text-stone-200" />
-                  <p className="font-medium text-stone-500">{t.noEmergencyDocs}</p>
+                  <p className="font-medium text-stone-500 dark:text-stone-400">{t.noEmergencyDocs}</p>
                   <p className="text-sm mt-1 max-w-sm mx-auto">{t.noEmergencyHint}</p>
                 </div>
               ) : (
@@ -1161,8 +1182,8 @@ export default function Dashboard({ onLogout }) {
                         onClick={() => togglePacketSelection(doc.id)}
                         className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition ${
                           isChecked
-                            ? 'bg-red-50 border-red-300 shadow-sm'
-                            : 'bg-white border-stone-200 hover:border-red-200'
+                            ? 'bg-red-50 dark:bg-red-950/50 border-red-300 shadow-sm'
+                            : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-700 hover:border-red-200'
                         }`}
                       >
                         {/* Checkbox */}
@@ -1177,12 +1198,12 @@ export default function Dashboard({ onLogout }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <h4 className="font-bold text-stone-800 text-sm truncate">{doc.title}</h4>
-                            <span className="text-xs font-semibold px-2 py-0.5 bg-stone-100 text-stone-600 rounded-full flex-shrink-0">
+                            <h4 className="font-bold text-stone-800 dark:text-white text-sm truncate">{doc.title}</h4>
+                            <span className="text-xs font-semibold px-2 py-0.5 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full flex-shrink-0">
                               {getCategoryLabel(doc.category)}
                             </span>
                           </div>
-                          <p className="text-xs text-stone-400 mt-0.5">{formatDate(doc.created_at)}</p>
+                          <p className="text-xs text-stone-400 dark:text-stone-500 dark:text-stone-500 mt-0.5">{formatDate(doc.created_at)}</p>
                           <p className="text-xs text-stone-500 mt-1 line-clamp-2 leading-relaxed">
                             {lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary}
                           </p>
@@ -1213,7 +1234,7 @@ export default function Dashboard({ onLogout }) {
                   <h3 className="font-bold text-stone-800">Your Packet Preview</h3>
                   <button
                     onClick={() => setPacketGenerated(false)}
-                    className="text-xs text-stone-400 hover:text-stone-600"
+                    className="text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600"
                   >
                     ← Edit selection
                   </button>
@@ -1222,11 +1243,11 @@ export default function Dashboard({ onLogout }) {
                 {emergencyDocs
                   .filter(d => selectedPacketIds.includes(d.id))
                   .map((doc, i) => (
-                    <div key={i} className="bg-white rounded-2xl border border-red-100 shadow-sm p-5">
+                    <div key={i} className="bg-white dark:bg-stone-900 rounded-2xl border border-red-100 dark:border-red-900/50 shadow-sm p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className="font-bold text-stone-900">{doc.title}</h3>
-                          <span className="text-xs text-stone-400">{getCategoryLabel(doc.category)} · {formatDate(doc.created_at)}</span>
+                          <h3 className="font-bold text-stone-900 dark:text-white">{doc.title}</h3>
+                          <span className="text-xs text-stone-400 dark:text-stone-500">{getCategoryLabel(doc.category)} · {formatDate(doc.created_at)}</span>
                         </div>
                         <button
                           onClick={() => handleViewOriginal(doc)}
@@ -1236,7 +1257,7 @@ export default function Dashboard({ onLogout }) {
                           <span>{t.viewOriginal}</span>
                         </button>
                       </div>
-                      <div className="text-sm text-stone-600 bg-stone-50 p-4 rounded-xl border border-stone-100 mb-3 leading-relaxed">
+                      <div className="text-sm text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-stone-800 p-4 rounded-xl border border-stone-100 dark:border-stone-700 mb-3 leading-relaxed">
                         {lang === 'es' && doc.ai_summary_es ? doc.ai_summary_es : doc.ai_summary}
                       </div>
                       {doc.action_items?.length > 0 && (
