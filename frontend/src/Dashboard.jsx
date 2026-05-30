@@ -348,10 +348,10 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
           </div>
           <span className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</span>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <button
             onClick={toggle}
-            className="hidden sm:block text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition"
+            className="text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition"
           >
             {t.language}
           </button>
@@ -388,7 +388,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
           </button>
           <button
             onClick={() => setShowTodo(true)}
-            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-blue-700 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-blue-700 transition px-1.5 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <ListTodo size={18} />
             {todos.filter(t => !t.done).length > 0 && (
@@ -399,7 +399,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
           </button>
           <button
             onClick={() => setShowReminders(true)}
-            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-amber-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-amber-600 transition px-1.5 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <Bell size={18} />
             {reminders.length > 0 && (
@@ -410,7 +410,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
           </button>
           <button
             onClick={toggleDark}
-            className="hidden sm:flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
             title={darkMode ? 'Light mode' : 'Dark mode'}
           >
             {darkMode ? (
@@ -421,7 +421,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center space-x-1.5 text-stone-400 hover:text-red-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="flex items-center space-x-1.5 text-stone-400 hover:text-red-600 transition px-1.5 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
           >
             <LogOut size={17} />
           </button>
