@@ -44,7 +44,7 @@ export default function Landing({ onGetStarted, darkMode, toggleDark }) {
             </button>
             <button
               onClick={onGetStarted}
-              className="text-sm font-semibold text-blue-700 hover:text-blue-800 transition"
+              className="hidden sm:block text-sm font-semibold text-blue-700 hover:text-blue-800 transition"
             >
               {t.signIn}
             </button>

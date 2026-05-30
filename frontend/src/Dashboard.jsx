@@ -351,7 +351,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
         <div className="flex items-center space-x-2">
           <button
             onClick={toggle}
-            className="text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition"
+            className="hidden sm:block text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition"
           >
             {t.language}
           </button>
@@ -410,7 +410,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
           </button>
           <button
             onClick={toggleDark}
-            className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="hidden sm:flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
             title={darkMode ? 'Light mode' : 'Dark mode'}
           >
             {darkMode ? (
