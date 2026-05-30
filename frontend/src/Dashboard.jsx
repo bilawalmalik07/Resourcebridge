@@ -131,10 +131,13 @@ export default function Dashboard({ onLogout }) {
 
   const handleViewOriginal = async (doc) => {
     try {
-      const res = await API.get(`/api/documents/${doc.id}/view-url`);
-      window.open(res.data.url, '_blank', 'noopener,noreferrer');
+      const res = await API.get(`/api/documents/${doc.id}/file`, {
+        responseType: 'blob',
+      });
+      const blobUrl = URL.createObjectURL(res.data);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
     } catch {
-      window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+      alert('Could not load file.');
     }
   };
 
