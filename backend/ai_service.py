@@ -173,7 +173,7 @@ def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
             config=types.UploadFileConfig(mime_type=mime_type)
         )
         response = client.models.generate_content(
-            model="models/gemini-1.5-flash",
+            model="gemini-2.0-flash",
             contents=[uploaded, PROMPT]
         )
         return response.text
@@ -184,7 +184,7 @@ def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
 def _send_text_to_gemini(text: str) -> str:
     """Send extracted plain text to Gemini."""
     response = client.models.generate_content(
-        model="models/gemini-1.5-flash",
+        model="gemini-2.0-flash",
         contents=f"{PROMPT}\n\nDocument text:\n\n{text}"
     )
     return response.text
