@@ -341,90 +341,76 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 font-sans">
       {/* Header */}
-      <nav className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 bg-blue-700 rounded-xl flex items-center justify-center shadow">
-            <FileText size={17} className="text-white" />
+      <nav className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 sticky top-0 z-40 shadow-sm">
+        {/* Row 1: Logo — always */}
+        <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-9 h-9 bg-blue-700 rounded-xl flex items-center justify-center shadow">
+              <FileText size={17} className="text-white" />
+            </div>
+            <span className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</span>
           </div>
-          <span className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</span>
+          {/* Desktop only buttons */}
+          <div className="hidden sm:flex items-center space-x-2">
+            <button onClick={toggle} className="text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition">
+              {t.language}
+            </button>
+            <button onClick={() => setShowTodo(true)} className="flex items-center space-x-1.5 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-sm relative">
+              <ListTodo size={15} /><span>To-Do</span>
+              {todos.filter(t => !t.done).length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{todos.filter(t => !t.done).length}</span>
+              )}
+            </button>
+            <button onClick={() => setShowReminders(true)} className="flex items-center space-x-1.5 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-sm relative">
+              <Bell size={15} /><span>Reminders</span>
+              {reminders.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{reminders.length}</span>
+              )}
+            </button>
+            <button onClick={() => setShowUploadPanel(true)} className="flex items-center space-x-1.5 bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-800 transition shadow-sm">
+              <Upload size={15} /><span>{t.uploadDocument}</span>
+            </button>
+            <button onClick={toggleDark} className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800">
+              {darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+              )}
+            </button>
+            <button onClick={onLogout} className="flex items-center text-stone-400 hover:text-red-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800">
+              <LogOut size={17} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={toggle}
-            className="text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800 transition"
-          >
+        {/* Row 2: Mobile sub-nav */}
+        <div className="sm:hidden flex items-center justify-between px-4 py-2 border-t border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
+          <button onClick={toggle} className="text-xs font-semibold text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-3 py-1.5 rounded-lg">
             {t.language}
           </button>
-          <button
-            onClick={() => setShowTodo(true)}
-            className="hidden sm:flex items-center space-x-1.5 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-sm relative"
-          >
-            <ListTodo size={15} />
-            <span>To-Do</span>
-            {todos.filter(t => !t.done).length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {todos.filter(t => !t.done).length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setShowReminders(true)}
-            className="hidden sm:flex items-center space-x-1.5 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700 transition shadow-sm relative"
-          >
-            <Bell size={15} />
-            <span>Reminders</span>
-            {reminders.filter(r => !isOverdue(r.remind_at) === false || true).length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {reminders.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setShowUploadPanel(true)}
-            className="hidden sm:flex items-center space-x-1.5 bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-800 transition shadow-sm"
-          >
-            <Upload size={15} />
-            <span>{t.uploadDocument}</span>
-          </button>
-          <button
-            onClick={() => setShowTodo(true)}
-            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-blue-700 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
-          >
-            <ListTodo size={18} />
-            {todos.filter(t => !t.done).length > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-blue-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                {todos.filter(t => !t.done).length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setShowReminders(true)}
-            className="sm:hidden relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-amber-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
-          >
-            <Bell size={18} />
-            {reminders.length > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-amber-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-                {reminders.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={toggleDark}
-            className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
-            title={darkMode ? 'Light mode' : 'Dark mode'}
-          >
-            {darkMode ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-            )}
-          </button>
-          <button
-            onClick={onLogout}
-            className="flex items-center space-x-1.5 text-stone-400 hover:text-red-600 transition px-2 py-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800"
-          >
-            <LogOut size={17} />
-          </button>
+          <div className="flex items-center space-x-1">
+            <button onClick={() => setShowTodo(true)} className="relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-blue-700 transition px-2 py-1.5 rounded-lg">
+              <ListTodo size={18} />
+              {todos.filter(t => !t.done).length > 0 && (
+                <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-blue-600 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{todos.filter(t => !t.done).length}</span>
+              )}
+            </button>
+            <button onClick={() => setShowReminders(true)} className="relative flex items-center justify-center text-stone-500 dark:text-stone-400 hover:text-amber-600 transition px-2 py-1.5 rounded-lg">
+              <Bell size={18} />
+              {reminders.length > 0 && (
+                <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-amber-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">{reminders.length}</span>
+              )}
+            </button>
+            <button onClick={toggleDark} className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-1.5 rounded-lg">
+              {darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+              )}
+            </button>
+            <button onClick={onLogout} className="flex items-center text-stone-400 hover:text-red-600 transition px-2 py-1.5 rounded-lg">
+              <LogOut size={17} />
+            </button>
+          </div>
         </div>
       </nav>
 
