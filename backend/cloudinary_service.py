@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import cloudinary
 import cloudinary.uploader
 import cloudinary.utils
@@ -41,32 +42,64 @@ def upload_file_to_cloudinary(file_bytes: bytes, filename: str, folder: str = "r
     return url
 
 
+def _extract_public_id(file_url: str) -> tuple[str, str]:
+    """
+    Extract the public_id and resource_type from a Cloudinary secure URL.
+
+    Example URL:
+      https://res.cloudinary.com/<cloud>/raw/upload/v1234567890/resourcebridge/user_22/foo.PDF
+      https://res.cloudinary.com/<cloud>/image/upload/v1234567890/resourcebridge/user_22/foo.png
+
+    Returns (public_id_without_extension, resource_type)
+    """
+    resource_type = "raw" if "/raw/" in file_url else "image"
+
+    # Split on /upload/ to get everything after it
+    parts = file_url.split("/upload/", 1)
+    if len(parts) != 2:
+        return file_url, resource_type
+
+    after_upload = parts[1]
+
+    # Strip optional version segment like "v1234567890/"
+    after_upload = re.sub(r"^v\d+/", "", after_upload)
+
+    # Strip query string
+    after_upload = after_upload.split("?")[0]
+
+    # For raw resources Cloudinary expects the public_id WITH the extension
+    # For image resources it expects WITHOUT the extension
+    if resource_type == "image":
+        # Remove extension
+        public_id = re.sub(r"\.[^.]+$", "", after_upload)
+    else:
+        # Keep extension — raw resources need it
+        public_id = after_upload
+
+    print(f"Extracted public_id='{public_id}' resource_type='{resource_type}'")
+    return public_id, resource_type
+
+
 def get_signed_download_url(file_url: str) -> str:
     """
-    Given a stored Cloudinary URL, return a short-lived signed version for downloading.
-    Used by ai_service and the file proxy to access raw resources.
+    Return a short-lived signed Cloudinary download URL for the given stored URL.
+    Works for both image and raw (PDF, docx, etc.) resources.
     """
-    import time
     try:
-        parts = file_url.split("/upload/", 1)
-        if len(parts) != 2:
-            return file_url  # not a cloudinary URL, return as-is
+        public_id, resource_type = _extract_public_id(file_url)
 
-        resource_type = "raw" if "/raw/" in file_url else "image"
-        # Strip version prefix like "v1234567890/"
-        after_upload = parts[1]
-        if after_upload.startswith("v") and "/" in after_upload:
-            after_upload = after_upload.split("/", 1)[1]
-
-        signed_url = cloudinary.utils.cloudinary_url(
-            after_upload,
+        signed_url, _ = cloudinary.utils.cloudinary_url(
+            public_id,
             resource_type=resource_type,
             type="upload",
             secure=True,
             sign_url=True,
-            expires_at=int(time.time()) + 300,  # 5 min
-        )[0]
+            expires_at=int(time.time()) + 300,  # 5 minutes
+        )
+
+        print(f"Signed URL → {signed_url}")
         return signed_url
     except Exception as e:
-        print(f"Could not generate signed URL: {e}, falling back to original")
+        print(
+            f"Could not generate signed URL: {e} — falling back to original URL")
         return file_url
