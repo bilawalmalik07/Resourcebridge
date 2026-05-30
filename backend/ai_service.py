@@ -161,7 +161,8 @@ def _extract_text_from_office(file_bytes: bytes, ext: str) -> str:
 
 
 def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
-    """Upload file to Gemini Files API and return response text."""
+    """Upload file to Gemini Files API and return response text. Retries on 503."""
+    import time
     mime_type = GEMINI_SUPPORTED[ext]
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
         tmp.write(file_bytes)
@@ -172,11 +173,22 @@ def _send_file_to_gemini(file_bytes: bytes, ext: str) -> str:
             file=tmp_path,
             config=types.UploadFileConfig(mime_type=mime_type)
         )
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[uploaded, PROMPT]
-        )
-        return response.text
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[uploaded, PROMPT]
+                )
+                return response.text
+            except Exception as e:
+                if "503" in str(e) or "UNAVAILABLE" in str(e):
+                    wait = (attempt + 1) * 10
+                    print(
+                        f"Gemini 503, retrying in {wait}s (attempt {attempt+1}/3)...")
+                    time.sleep(wait)
+                else:
+                    raise
+        raise Exception("Gemini unavailable after 3 retries")
     finally:
         os.unlink(tmp_path)
 
