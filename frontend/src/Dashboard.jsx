@@ -859,7 +859,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
                           {getCategoryLabel(doc.category)}
                         </span>
                       </div>
-                      <h4 className="font-bold text-stone-800 mt-4 line-clamp-1 text-sm">{doc.title}</h4>
+                      <h4 className="font-bold text-stone-800 dark:text-white mt-4 line-clamp-1 text-sm">{doc.title}</h4>
                       <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t.uploaded}: {formatDate(doc.created_at)}</p>
                       <p className="text-sm text-stone-500 dark:text-stone-400 dark:text-stone-400 mt-2 line-clamp-2 leading-relaxed">
                         {getSummary(doc) || 'Click to view AI analysis...'}
@@ -1222,7 +1222,7 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
             {packetGenerated && (
               <div className="mt-6 space-y-4" id="emergency-packet">
                 <div className="flex items-center justify-between print:hidden mb-2">
-                  <h3 className="font-bold text-stone-800">Your Packet Preview</h3>
+                  <h3 className="font-bold text-stone-800 dark:text-white">Your Packet Preview</h3>
                   <button
                     onClick={() => setPacketGenerated(false)}
                     className="text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600"
