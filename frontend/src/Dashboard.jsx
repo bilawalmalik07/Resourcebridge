@@ -443,7 +443,7 @@ export default function Dashboard({ onLogout }) {
           <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-bold text-stone-800 dark:text-white text-lg">{t.uploadTitle}</h3>
-              <button onClick={() => setShowUploadPanel(false)} className="text-stone-400 hover:text-stone-600"><X size={20} /></button>
+              <button onClick={() => setShowUploadPanel(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"><X size={20} /></button>
             </div>
 
             {uploadError && (
@@ -582,7 +582,7 @@ export default function Dashboard({ onLogout }) {
                   <p className="text-xs text-stone-400 dark:text-stone-500">{todos.filter(t => !t.done).length} remaining</p>
                 </div>
               </div>
-              <button onClick={() => setShowTodo(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X size={18} /></button>
+              <button onClick={() => setShowTodo(false)} className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X size={18} /></button>
             </div>
             {/* Add input */}
             <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50">
@@ -669,7 +669,7 @@ export default function Dashboard({ onLogout }) {
                   <p className="text-xs text-stone-400 dark:text-stone-500">{reminders.length} reminder{reminders.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
-              <button onClick={() => setShowReminders(false)} className="text-stone-400 hover:text-stone-600 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X size={18} /></button>
+              <button onClick={() => setShowReminders(false)} className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition"><X size={18} /></button>
             </div>
             {/* Add form */}
             <div className="px-6 py-4 border-b border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800/50 space-y-3">
@@ -798,7 +798,7 @@ export default function Dashboard({ onLogout }) {
                 <div className="flex items-center justify-between mb-3">
                   <button
                     onClick={() => { setSelectMode(s => !s); setSelectedIds([]); }}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${selectMode ? 'bg-red-50 text-red-600 border-red-200' : 'bg-stone-100 text-stone-600 border-stone-200 hover:border-stone-300'}`}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${selectMode ? 'bg-red-50 text-red-600 border-red-200' : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-300'}`}
                   >
                     {selectMode ? 'Cancel' : 'Select'}
                   </button>
@@ -864,11 +864,11 @@ export default function Dashboard({ onLogout }) {
                       )}
                       <div className="flex items-start justify-between">
                         <div className={`bg-blue-50 p-2.5 rounded-xl text-blue-600 ${selectMode ? 'ml-6' : ''}`}><FileText size={20} /></div>
-                        <span className="text-xs font-semibold px-2.5 py-1 bg-stone-100 text-stone-600 rounded-full mr-5">
+                        <span className="text-xs font-semibold px-2.5 py-1 bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 rounded-full mr-5">
                           {getCategoryLabel(doc.category)}
                         </span>
                       </div>
-                      <h4 className="font-bold text-stone-800 mt-4 line-clamp-1 text-sm">{doc.title}</h4>
+                      <h4 className="font-bold text-stone-800 dark:text-white mt-4 line-clamp-1 text-sm">{doc.title}</h4>
                       <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t.uploaded}: {formatDate(doc.created_at)}</p>
                       <p className="text-sm text-stone-500 dark:text-stone-400 dark:text-stone-400 mt-2 line-clamp-2 leading-relaxed">
                         {getSummary(doc) || 'Click to view AI analysis...'}
@@ -909,7 +909,7 @@ export default function Dashboard({ onLogout }) {
                       </div>
                       <button
                         onClick={() => setSelectedDoc(null)}
-                        className="text-stone-400 hover:text-stone-600 ml-2 flex-shrink-0"
+                        className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 ml-2 flex-shrink-0"
                       >
                         <X size={18} />
                       </button>
@@ -1006,7 +1006,7 @@ export default function Dashboard({ onLogout }) {
                       </div>
                       <button
                         onClick={() => setSelectedDoc(null)}
-                        className="text-stone-400 hover:text-stone-600 ml-2 flex-shrink-0"
+                        className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 ml-2 flex-shrink-0"
                       >
                         <X size={18} />
                       </button>
@@ -1134,7 +1134,7 @@ export default function Dashboard({ onLogout }) {
                       className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition ${
                         emergencyCategoryFilter === cat
                           ? 'bg-red-600 text-white border-red-600'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-red-300 hover:text-red-600'
+                          : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-red-300 hover:text-red-600'
                       }`}
                     >
                       {cat === 'All' ? 'All Categories' : getCategoryLabel(cat)}
@@ -1231,7 +1231,7 @@ export default function Dashboard({ onLogout }) {
             {packetGenerated && (
               <div className="mt-6 space-y-4" id="emergency-packet">
                 <div className="flex items-center justify-between print:hidden mb-2">
-                  <h3 className="font-bold text-stone-800">Your Packet Preview</h3>
+                  <h3 className="font-bold text-stone-800 dark:text-white">Your Packet Preview</h3>
                   <button
                     onClick={() => setPacketGenerated(false)}
                     className="text-xs text-stone-400 dark:text-stone-500 hover:text-stone-600"
@@ -1279,7 +1279,7 @@ export default function Dashboard({ onLogout }) {
 
                 <button
                   onClick={handlePrintPacket}
-                  className="flex items-center space-x-2 text-sm font-semibold text-stone-700 border border-stone-200 px-5 py-2.5 rounded-xl hover:bg-stone-50 transition print:hidden"
+                  className="flex items-center space-x-2 text-sm font-semibold text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-stone-700 px-5 py-2.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition print:hidden"
                 >
                   <Printer size={15} />
                   <span>{t.printPacket}</span>
