@@ -1,10 +1,13 @@
 import time
 import os
+import io
+import requests as req
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from dotenv import load_dotenv
@@ -291,7 +294,32 @@ def delete_document(
     db.commit()
 
 
-# ─── Signed View URL ───────────────────────────────────────────────────────────
+# ─── File Proxy (replaces direct signed URL — fixes PDF "blocked for delivery") ─
+
+MIME_MAP = {
+    ".pdf":  "application/pdf",
+    ".png":  "image/png",
+    ".jpg":  "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif":  "image/gif",
+    ".tiff": "image/tiff",
+    ".tif":  "image/tiff",
+    ".bmp":  "image/bmp",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc":  "application/msword",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls":  "application/vnd.ms-excel",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".ppt":  "application/vnd.ms-powerpoint",
+    ".txt":  "text/plain",
+    ".csv":  "text/csv",
+}
+
+# File types that open inline in the browser; everything else is a download attachment
+INLINE_EXTS = {".pdf", ".png", ".jpg", ".jpeg",
+               ".webp", ".gif", ".tiff", ".tif", ".bmp"}
+
 
 @app.get("/api/documents/{doc_id}/view-url")
 def get_view_url(
@@ -299,14 +327,72 @@ def get_view_url(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_user)
 ):
+    """Return a proxy URL through our own server so PDFs and raw files are never served
+    directly from Cloudinary (which blocks raw resource delivery by default)."""
     doc = db.query(models.Document).filter(
         models.Document.id == doc_id,
         models.Document.owner_id == current_user.id
     ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
+
+    # Issue a short-lived token so the proxy endpoint can auth without a header
+    token = security.create_access_token(data={"sub": current_user.username})
+    base = os.getenv("APP_BASE_URL", "").rstrip("/")
+    return {"url": f"{base}/api/documents/{doc_id}/proxy-file?token={token}"}
+
+
+@app.get("/api/documents/{doc_id}/proxy-file")
+def proxy_file(
+    doc_id: int,
+    token: str,
+    db: Session = Depends(get_db),
+):
+    """Stream the file through our server with the correct Content-Type and
+    Content-Disposition so PDFs open in the browser and other files download
+    with their real filename — regardless of Cloudinary delivery restrictions."""
+
+    # Authenticate via query-param token (no Authorization header available on direct open)
+    current_user = security.get_current_user(token=token, db=db)
+
+    doc = db.query(models.Document).filter(
+        models.Document.id == doc_id,
+        models.Document.owner_id == current_user.id
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
     signed_url = cloudinary_service.get_signed_download_url(doc.file_url)
-    return {"url": signed_url}
+    try:
+        resp = req.get(signed_url, timeout=60)
+        resp.raise_for_status()
+    except Exception as e:
+        raise HTTPException(
+            status_code=502, detail=f"Could not fetch file: {e}")
+
+    # Determine extension from the stored URL (strip query params first)
+    url_path = doc.file_url.split("?")[0]
+    ext = Path(url_path).suffix.lower()
+    content_type = MIME_MAP.get(ext, resp.headers.get(
+        "Content-Type", "application/octet-stream"))
+
+    # Build a clean filename from the URL path
+    raw_name = url_path.split("/")[-1]
+    # Cloudinary appends a unique suffix — strip it if it looks like _<alphanum> before the ext
+    import re
+    clean_name = re.sub(
+        r"_[a-zA-Z0-9]{6,}(\.[^.]+)$", r"\1", raw_name) if ext else raw_name
+
+    if ext in INLINE_EXTS:
+        disposition = f'inline; filename="{clean_name}"'
+    else:
+        disposition = f'attachment; filename="{clean_name}"'
+
+    return StreamingResponse(
+        io.BytesIO(resp.content),
+        media_type=content_type,
+        headers={"Content-Disposition": disposition},
+    )
 
 
 # ─── Reminders ─────────────────────────────────────────────────────────────────
