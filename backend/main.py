@@ -45,7 +45,7 @@ app.add_middleware(
 
 # ─── Health ────────────────────────────────────────────────────────────────────
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def read_root():
     return {"status": "healthy", "project": "ResourceBridge"}
 
