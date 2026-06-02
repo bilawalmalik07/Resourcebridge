@@ -20,9 +20,7 @@ export default function Landing({ onGetStarted, darkMode, toggleDark }) {
       <nav className="fixed top-0 w-full z-50 bg-stone-50/90 dark:bg-stone-950/90 backdrop-blur border-b border-stone-200 dark:border-stone-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
-              <FileText size={16} className="text-white" />
-            </div>
+            <img src="/resourcebridge-logo.svg" alt="ResourceBridge logo" className="w-8 h-8" />
             <span className="font-bold text-stone-900 dark:text-white text-lg tracking-tight">{t.appName}</span>
           </div>
           <div className="flex items-center space-x-3">
