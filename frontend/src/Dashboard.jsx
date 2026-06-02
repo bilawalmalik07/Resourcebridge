@@ -345,7 +345,9 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
         {/* Row 1: Logo — always */}
         <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <img src="/resourcebridge-logo.svg" alt="ResourceBridge logo" className="w-9 h-9" />
+            <div className="w-9 h-9 bg-blue-700 rounded-xl flex items-center justify-center shadow">
+              <FileText size={17} className="text-white" />
+            </div>
             <span className="text-lg font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</span>
           </div>
           {/* Desktop only buttons */}

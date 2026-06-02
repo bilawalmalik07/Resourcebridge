@@ -85,8 +85,8 @@ export default function Login({ setToken, darkMode, toggleDark }) {
       <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-950 px-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 mb-4">
-              <img src="/resourcebridge-logo.svg" alt="ResourceBridge logo" className="w-14 h-14" />
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-700 rounded-2xl mb-4 shadow-lg">
+              <FileText size={24} className="text-white" />
             </div>
             <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</h1>
           </div>
@@ -138,8 +138,8 @@ export default function Login({ setToken, darkMode, toggleDark }) {
       {successMsg && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-stone-100 dark:border-stone-800 text-center">
-            <div className="w-12 h-12 flex items-center justify-center mx-auto mb-4">
-              <img src="/resourcebridge-logo.svg" alt="ResourceBridge logo" className="w-12 h-12" />
+            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <FileText size={22} className="text-blue-700" />
             </div>
             <h3 className="font-bold text-stone-900 dark:text-white text-lg mb-2">Account Created!</h3>
             <p className="text-stone-500 dark:text-stone-400 text-sm mb-6">{successMsg}</p>
@@ -155,9 +155,10 @@ export default function Login({ setToken, darkMode, toggleDark }) {
 
       <div className="max-w-md w-full">
 
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 mb-4">
-            <img src="/resourcebridge-logo.svg" alt="ResourceBridge logo" className="w-14 h-14" />
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-700 rounded-2xl mb-4 shadow-lg">
+            <FileText size={24} className="text-white" />
           </div>
           <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tight">{t.appName}</h1>
           <p className="text-stone-500 dark:text-stone-400 mt-1 text-sm">{t.tagline}</p>
