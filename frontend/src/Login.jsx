@@ -220,7 +220,6 @@ export default function Login({ setToken, darkMode, toggleDark }) {
               <div>
                 <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
                   Email Address
-                  <span className="ml-1.5 text-xs font-normal text-stone-400">(optional)</span>
                 </label>
                 <input
                   type="email"
