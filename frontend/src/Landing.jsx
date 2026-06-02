@@ -42,18 +42,6 @@ export default function Landing({ onGetStarted, darkMode, toggleDark }) {
             >
               {t.language}
             </button>
-            <button
-              onClick={onGetStarted}
-              className="hidden sm:block text-sm font-semibold text-blue-700 hover:text-blue-800 transition"
-            >
-              {t.signIn}
-            </button>
-            <button
-              onClick={onGetStarted}
-              className="text-sm font-semibold bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition shadow-sm"
-            >
-              {t.signUp}
-            </button>
           </div>
         </div>
       </nav>
