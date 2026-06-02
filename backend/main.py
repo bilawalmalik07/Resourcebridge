@@ -477,6 +477,13 @@ if os.path.exists(FRONTEND_DIST):
     app.mount(
         "/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="assets")
 
+    @app.get("/favicon.svg")
+    def serve_favicon():
+        favicon_path = os.path.join(FRONTEND_DIST, "favicon.svg")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
+        raise HTTPException(status_code=404, detail="Favicon not found")
+
     @app.get("/{full_path:path}")
     def serve_react(full_path: str):
         return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))
