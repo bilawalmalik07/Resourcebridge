@@ -17,7 +17,20 @@ export default function App() {
     localStorage.setItem('rb_dark', darkMode);
   }, [darkMode]);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (view === 'auth') setView('landing');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [view]);
+
   const toggleDark = () => setDarkMode(d => !d);
+
+  const handleGetStarted = () => {
+    history.pushState(null, '', '/');
+    setView('auth');
+  };
 
   const handleSetToken = (t) => {
     setToken(t);
@@ -31,7 +44,7 @@ export default function App() {
   };
 
   if (view === 'landing') {
-    return <Landing onGetStarted={() => setView('auth')} darkMode={darkMode} toggleDark={toggleDark} />;
+    return <Landing onGetStarted={handleGetStarted} darkMode={darkMode} toggleDark={toggleDark} />;
   }
 
   if (view === 'auth' || !token) {
