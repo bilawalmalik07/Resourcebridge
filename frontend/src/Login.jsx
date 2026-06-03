@@ -195,7 +195,7 @@ export default function Login({ setToken, darkMode, toggleDark }) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* Username — type="text" so no @ required */}
+            {/* Username */}
             <div>
               <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
                 Username
@@ -215,7 +215,7 @@ export default function Login({ setToken, darkMode, toggleDark }) {
               )}
             </div>
 
-            {/* Email — only shown on sign up, fully optional */}
+            {/* Email */}
             {isSignUp && (
               <div>
                 <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
