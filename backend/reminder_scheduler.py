@@ -21,7 +21,7 @@ def _check_and_send():
 
         for reminder in due:
             user = reminder.owner
-            if user and user.email:
+            if user and user.email and user.username != "demo_user":
                 success = email_service.send_reminder_email(
                     to_email=user.email,
                     username=user.username,
@@ -36,7 +36,7 @@ def _check_and_send():
                         f"Reminder #{reminder.id} failed — will retry next cycle")
             else:
                 reminder.sent = True
-                print(f"Reminder #{reminder.id} skipped — user has no email")
+                print(f"Reminder #{reminder.id} skipped — demo or no email")
 
         if due:
             db.commit()
