@@ -5,8 +5,9 @@ import {
   FileText, Search, Upload, LogOut, Globe, Sparkles,
   AlertTriangle, Trash2, ExternalLink, CheckCircle,
   Clock, ChevronDown, X, Printer, Shield, ShieldOff,
-  ListTodo, Bell, Plus, Circle, CircleCheck, BellRing
+  ListTodo, Bell, Plus, Circle, CircleCheck, BellRing, BookOpen
 } from 'lucide-react';
+import ResourceLibrary from './ResourceLibrary';
 
 // Decode username from JWT so localStorage is scoped per user
 const getUserKey = (key) => {
@@ -719,16 +720,21 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
 
         {/* Tabs */}
         <div className="flex space-x-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl w-fit mb-6">
-          {['documents', 'emergency'].map(tab => (
+          {['documents', 'emergency', 'resources'].map(tab => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); if (tab === 'emergency') { fetchEmergencyDocs(); setPacketGenerated(false); } }}
               className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${activeTab === tab ? 'bg-white dark:bg-stone-700 shadow text-stone-900 dark:text-white' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'}`}
             >
-              {tab === 'documents' ? t.myDocuments : (
+              {tab === 'documents' ? t.myDocuments : tab === 'emergency' ? (
                 <span className="flex items-center space-x-1.5">
                   <AlertTriangle size={14} className="text-red-500" />
                   <span>{t.emergencyTab}</span>
+                </span>
+              ) : (
+                <span className="flex items-center space-x-1.5">
+                  <BookOpen size={14} className="text-blue-500" />
+                  <span>{lang === 'es' ? 'Recursos' : 'Resources'}</span>
                 </span>
               )}
             </button>
@@ -1265,6 +1271,9 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
             )}
           </div>
         )}
+
+        {/* ── Resources Tab ── */}
+        {activeTab === 'resources' && <ResourceLibrary />}
       </div>
     </div>
   );
