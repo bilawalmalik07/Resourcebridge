@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
-import { Shield, Globe, Zap, AlertTriangle, ArrowRight, FileText, ListTodo, Bell } from 'lucide-react';
+import { Shield, Globe, Zap, AlertTriangle, ArrowRight, FileText, ListTodo, Bell, PlayCircle } from 'lucide-react';
+import API from './api';
 
-export default function Landing({ onGetStarted, darkMode, toggleDark }) {
+export default function Landing({ onGetStarted, onDemoLogin, darkMode, toggleDark }) {
   const { t, toggle, lang } = useLanguage();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const res = await API.post('/api/demo-login');
+      localStorage.setItem('token', res.data.access_token);
+      onDemoLogin(res.data.access_token);
+    } catch (e) {
+      alert('Demo unavailable right now. Please try again.');
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   const features = [
     { icon: Zap, title: t.feature1Title, desc: t.feature1Desc, color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -67,7 +82,18 @@ export default function Landing({ onGetStarted, darkMode, toggleDark }) {
               <span>{t.getStarted}</span>
               <ArrowRight size={18} />
             </button>
+            <button
+              onClick={handleDemo}
+              disabled={demoLoading}
+              className="flex items-center space-x-2 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 font-semibold px-8 py-4 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition shadow-lg text-base border border-stone-200 dark:border-stone-700 disabled:opacity-60"
+            >
+              <PlayCircle size={18} className="text-blue-600" />
+              <span>{demoLoading ? 'Loading...' : (lang === 'en' ? 'Try Demo' : 'Ver Demo')}</span>
+            </button>
           </div>
+          <p className="text-xs text-stone-400 mt-4">
+            {lang === 'en' ? 'No account needed — explore with sample documents' : 'Sin cuenta — explora con documentos de muestra'}
+          </p>
         </div>
       </section>
 

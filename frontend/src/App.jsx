@@ -37,6 +37,11 @@ export default function App() {
     setView('app');
   };
 
+  const handleDemoLogin = (t) => {
+    setToken(t);
+    setView('app');
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     setToken('');
@@ -44,7 +49,14 @@ export default function App() {
   };
 
   if (view === 'landing') {
-    return <Landing onGetStarted={handleGetStarted} darkMode={darkMode} toggleDark={toggleDark} />;
+    return (
+      <Landing
+        onGetStarted={handleGetStarted}
+        onDemoLogin={handleDemoLogin}
+        darkMode={darkMode}
+        toggleDark={toggleDark}
+      />
+    );
   }
 
   if (view === 'auth' || !token) {

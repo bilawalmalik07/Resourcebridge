@@ -27,6 +27,10 @@ models.Base.metadata.create_all(bind=engine)
 _pending: dict = {}
 CODE_TTL = 600  # 10 minutes
 
+DEMO_USERNAME = "demo_user"
+DEMO_PASSWORD = "Demo@1234"
+DEMO_EMAIL = "demo@resourcebridge.tech"
+
 app = FastAPI(title="ResourceBridge API")
 
 reminder_scheduler.start_scheduler()
@@ -72,7 +76,7 @@ def send_verification(user_in: schemas.UserCreate, db: Session = Depends(get_db)
     if " " in u:
         raise HTTPException(
             status_code=400, detail="Username cannot contain spaces.")
-    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",.<>/?\\|]', u):
+    if not re.search(r'[!@#$%^&*()\-_=+\[\]{};:\'",./<>?\\|]', u):
         raise HTTPException(
             status_code=400, detail="Username must include at least one symbol.")
     p = user_in.password
@@ -143,6 +147,26 @@ def login_user(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    token = security.create_access_token(data={"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+# ─── Demo Login ────────────────────────────────────────────────────────────────
+
+@app.post("/api/demo-login", response_model=schemas.Token)
+def demo_login(db: Session = Depends(get_db)):
+    """Auto-creates the demo user if needed and returns a token."""
+    user = db.query(models.User).filter(
+        models.User.username == DEMO_USERNAME).first()
+    if not user:
+        user = models.User(
+            username=DEMO_USERNAME,
+            email=DEMO_EMAIL,
+            hashed_password=security.get_password_hash(DEMO_PASSWORD),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     token = security.create_access_token(data={"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 
@@ -332,11 +356,8 @@ def get_view_url(
     ext = Path(url_path).suffix.lower()
 
     if ext in IMAGE_EXTS:
-        # Images: serve directly from Cloudinary — clean URL, fast, no proxy needed
-        # Cloudinary image resource_type is always publicly accessible
         return {"url": doc.file_url}
     else:
-        # PDFs and docs: route through proxy to bypass Cloudinary raw delivery blocks
         token = security.create_access_token(
             data={"sub": current_user.username})
         base = os.getenv("APP_BASE_URL", "").rstrip("/")
@@ -349,7 +370,6 @@ def proxy_file(
     token: str,
     db: Session = Depends(get_db),
 ):
-    """Stream PDFs and docs through our server with correct Content-Type and Content-Disposition."""
     import re
     current_user = security.get_current_user(token=token, db=db)
 
