@@ -57,6 +57,14 @@ export default function Landing({ onGetStarted, onDemoLogin, darkMode, toggleDar
             >
               {t.language}
             </button>
+            <button
+              onClick={handleDemo}
+              disabled={demoLoading}
+              className="flex items-center space-x-1.5 text-sm font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-300 dark:border-stone-700 px-3 py-1.5 rounded-lg transition hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-60"
+            >
+              <PlayCircle size={15} className="text-blue-600" />
+              <span>{demoLoading ? 'Loading...' : (lang === 'en' ? 'Try Demo' : 'Ver Demo')}</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -82,18 +90,7 @@ export default function Landing({ onGetStarted, onDemoLogin, darkMode, toggleDar
               <span>{t.getStarted}</span>
               <ArrowRight size={18} />
             </button>
-            <button
-              onClick={handleDemo}
-              disabled={demoLoading}
-              className="flex items-center space-x-2 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-200 font-semibold px-8 py-4 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 transition shadow-lg text-base border border-stone-200 dark:border-stone-700 disabled:opacity-60"
-            >
-              <PlayCircle size={18} className="text-blue-600" />
-              <span>{demoLoading ? 'Loading...' : (lang === 'en' ? 'Try Demo' : 'Ver Demo')}</span>
-            </button>
           </div>
-          <p className="text-xs text-stone-400 mt-4">
-            {lang === 'en' ? 'No account needed — explore with sample documents' : 'Sin cuenta — explora con documentos de muestra'}
-          </p>
         </div>
       </section>
 
