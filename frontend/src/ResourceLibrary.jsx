@@ -161,6 +161,7 @@ const CHECKLISTS = [
     id: 'emergency-docs',
     icon: AlertTriangle,
     color: 'text-red-600',
+    dotColor: '#dc2626',
     bg: 'bg-red-50 dark:bg-red-950/40',
     border: 'border-red-200 dark:border-red-800',
     badge: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
@@ -216,6 +217,7 @@ const CHECKLISTS = [
     id: 'school-enrollment',
     icon: BookOpen,
     color: 'text-purple-600',
+    dotColor: '#9333ea',
     bg: 'bg-purple-50 dark:bg-purple-950/40',
     border: 'border-purple-200 dark:border-purple-800',
     badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
@@ -257,6 +259,7 @@ const CHECKLISTS = [
     id: 'family-safety-plan',
     icon: Shield,
     color: 'text-sky-600',
+    dotColor: '#0284c7',
     bg: 'bg-sky-50 dark:bg-sky-950/40',
     border: 'border-sky-200 dark:border-sky-800',
     badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300',
@@ -482,7 +485,7 @@ function ChecklistCard({ checklist, lang, onPrint }) {
               <ul className="space-y-2">
                 {section.items.map((item, ii) => (
                   <li key={ii} className="flex items-start gap-3">
-                    <span className={`flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full ${checklist.color.replace('text-', 'bg-')}`} />
+                    <span className="flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: checklist.dotColor }} />
                     <span className="text-sm leading-relaxed text-stone-600 dark:text-stone-300">
                       {item[lang]}
                     </span>
