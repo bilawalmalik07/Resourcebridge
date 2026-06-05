@@ -353,8 +353,8 @@ function PrintModal({ resource, lang, onClose }) {
                 <h4 className="font-bold text-stone-800 dark:text-white text-sm mb-2">{section.heading[lang]}</h4>
                 <ul className="space-y-1.5">
                   {section.items.map((item, ii) => (
-                    <li key={ii} className="flex gap-2 text-sm text-stone-600 dark:text-stone-300">
-                      <span className="flex-shrink-0 mt-1 w-4 h-4 border-2 border-stone-300 dark:border-stone-600 rounded" />
+                    <li key={ii} className="flex items-start gap-2.5 text-sm text-stone-600 dark:text-stone-300">
+                      <span className="flex-shrink-0 mt-2 w-1.5 h-1.5 rounded-full bg-stone-400 dark:bg-stone-500" />
                       {item[lang]}
                     </li>
                   ))}
@@ -433,13 +433,7 @@ function RightsCard({ card, lang, onPrint }) {
 
 function ChecklistCard({ checklist, lang, onPrint }) {
   const [expanded, setExpanded] = useState(false);
-  const [checked, setChecked] = useState({});
   const Icon = checklist.icon;
-
-  const totalItems = checklist.sections.reduce((acc, s) => acc + s.items.length, 0);
-  const checkedCount = Object.values(checked).filter(Boolean).length;
-
-  const toggleItem = (key) => setChecked(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <div className={`rounded-2xl border ${checklist.border} bg-white dark:bg-stone-900 overflow-hidden transition-shadow hover:shadow-md`}>
@@ -453,18 +447,13 @@ function ChecklistCard({ checklist, lang, onPrint }) {
         </div>
         <div className="flex-1 min-w-0">
           <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full ${checklist.badge} mb-1`}>
-            {lang === 'es' ? 'Lista de Verificación' : 'Checklist'}
+            {lang === 'es' ? 'Lista de Recursos' : 'Resource List'}
           </span>
           <h3 className="font-bold text-stone-800 dark:text-white text-sm leading-snug">
             {checklist.title[lang]}
           </h3>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {checkedCount > 0 && (
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${checklist.badge}`}>
-              {checkedCount}/{totalItems}
-            </span>
-          )}
           <button
             onClick={(e) => { e.stopPropagation(); onPrint(checklist); }}
             className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition"
@@ -485,53 +474,23 @@ function ChecklistCard({ checklist, lang, onPrint }) {
           <p className="text-xs text-stone-500 dark:text-stone-400 italic leading-relaxed">
             {checklist.subtitle[lang]}
           </p>
-          {checkedCount > 0 && (
-            <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-1.5">
-              <div
-                className={`h-1.5 rounded-full transition-all ${checklist.color.replace('text-', 'bg-')}`}
-                style={{ width: `${(checkedCount / totalItems) * 100}%` }}
-              />
-            </div>
-          )}
           {checklist.sections.map((section, si) => (
             <div key={si}>
               <h4 className="font-bold text-stone-700 dark:text-stone-200 text-xs uppercase tracking-wide mb-2">
                 {section.heading[lang]}
               </h4>
               <ul className="space-y-2">
-                {section.items.map((item, ii) => {
-                  const key = `${si}-${ii}`;
-                  const isChecked = !!checked[key];
-                  return (
-                    <li
-                      key={ii}
-                      className="flex items-start gap-3 cursor-pointer group"
-                      onClick={() => toggleItem(key)}
-                    >
-                      <div className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition ${isChecked ? `${checklist.color.replace('text-', 'bg-').replace('-600', '-500')} border-transparent` : 'border-stone-300 dark:border-stone-600 group-hover:border-stone-400'}`}>
-                        {isChecked && (
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className={`text-sm leading-relaxed transition ${isChecked ? 'line-through text-stone-400 dark:text-stone-600' : 'text-stone-600 dark:text-stone-300'}`}>
-                        {item[lang]}
-                      </span>
-                    </li>
-                  );
-                })}
+                {section.items.map((item, ii) => (
+                  <li key={ii} className="flex items-start gap-3">
+                    <span className={`flex-shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full ${checklist.color.replace('text-', 'bg-')}`} />
+                    <span className="text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+                      {item[lang]}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </div>
           ))}
-          {checkedCount > 0 && (
-            <button
-              onClick={() => setChecked({})}
-              className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition mt-1"
-            >
-              {lang === 'es' ? 'Restablecer lista' : 'Reset checklist'}
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -608,8 +567,8 @@ export default function ResourceLibrary() {
         <div className="space-y-3">
           <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">
             {lang === 'es'
-              ? 'Marca los elementos mientras los completas · Imprime para compartir con tu familia.'
-              : 'Check items off as you complete them · Print to share with your family.'}
+              ? 'Expande cualquier lista para ver los elementos · Imprime para compartir con tu familia.'
+              : 'Expand any list to view items · Print to share with your family.'}
           </p>
           {CHECKLISTS.map(checklist => (
             <ChecklistCard key={checklist.id} checklist={checklist} lang={lang} onPrint={setPrintResource} />
