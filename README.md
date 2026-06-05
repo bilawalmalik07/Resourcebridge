@@ -16,7 +16,7 @@ ResourceBridge is a bilingual, AI-assisted web platform that helps immigrant and
 
 ResourceBridge bridges the gap between families and the documents that affect their lives. With full English & Spanish support, users can upload any document — immigration paperwork, school records, housing forms, healthcare documents — and instantly receive a plain-language AI summary explaining what it means and what action to take.
 
-Built for real people. Simple, secure, and accessible.
+Built for real people. Simple, Secure, and Accessible.
 
 ---
 
