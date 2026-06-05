@@ -55,15 +55,12 @@ def _parse_url(file_url: str) -> tuple[str, str]:
     if len(parts) != 2:
         raise ValueError(f"Not a valid Cloudinary upload URL: {file_url}")
 
-    # Strip query string, then version prefix (v followed by digits and slash)
     after_upload = parts[1].split("?")[0]
     after_upload = re.sub(r"^v\d+/", "", after_upload)
 
     if resource_type == "image":
-        # Cloudinary image public_ids do NOT include the file extension
         public_id = re.sub(r"\.[^./]+$", "", after_upload)
     else:
-        # Cloudinary raw public_ids MUST include the file extension
         public_id = after_upload
 
     return public_id, resource_type
