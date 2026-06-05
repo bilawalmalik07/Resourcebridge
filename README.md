@@ -23,7 +23,6 @@ Built for real people. Simple, secure, and accessible.
 - 🤖 **AI-Powered Summaries** — Google Gemini analyzes uploaded documents and generates plain-language explanations in both English and Spanish
 - 📱 **Fully Responsive** — Works seamlessly on any device, optimized for mobile
 - 🌙 **Dark Mode** — System-wide dark mode toggle, preference saved across sessions
-- ⚡ **Fast & Lightweight** — Built with Vite for instant load times
 
 ---
 
