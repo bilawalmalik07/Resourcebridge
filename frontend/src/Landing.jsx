@@ -40,10 +40,11 @@ export default function Landing({ onGetStarted, onDemoLogin, darkMode, toggleDar
             </div>
             <span className="font-bold text-stone-900 dark:text-white text-lg tracking-tight">{t.appName}</span>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            {/* Dark toggle — hidden on smallest screens */}
             <button
               onClick={toggleDark}
-              className="flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-300 dark:border-stone-700"
+              className="hidden sm:flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition px-2 py-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-300 dark:border-stone-700"
             >
               {darkMode ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -51,19 +52,21 @@ export default function Landing({ onGetStarted, onDemoLogin, darkMode, toggleDar
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               )}
             </button>
+            {/* Language toggle */}
             <button
               onClick={toggle}
               className="text-sm font-medium text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 border border-stone-300 dark:border-stone-700 px-3 py-1.5 rounded-lg transition hover:bg-stone-100 dark:hover:bg-stone-800"
             >
               {t.language}
             </button>
+            {/* Try Demo — icon only on mobile, icon+text on desktop */}
             <button
               onClick={handleDemo}
               disabled={demoLoading}
-              className="flex items-center space-x-1.5 text-sm font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-300 dark:border-stone-700 px-3 py-1.5 rounded-lg transition hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-60"
+              className="flex items-center space-x-1.5 text-sm font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white border border-stone-300 dark:border-stone-700 px-2 sm:px-3 py-1.5 rounded-lg transition hover:bg-stone-100 dark:hover:bg-stone-800 disabled:opacity-60"
             >
-              <PlayCircle size={15} className="text-blue-600" />
-              <span>{demoLoading ? 'Loading...' : (lang === 'en' ? 'Try Demo' : 'Ver Demo')}</span>
+              <PlayCircle size={15} className="text-blue-600 flex-shrink-0" />
+              <span className="hidden sm:inline">{demoLoading ? 'Loading...' : (lang === 'en' ? 'Try Demo' : 'Ver Demo')}</span>
             </button>
           </div>
         </div>

@@ -719,26 +719,28 @@ export default function Dashboard({ onLogout, darkMode, toggleDark }) {
       <div className="max-w-7xl mx-auto px-4 py-6">
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl w-fit mb-6">
-          {['documents', 'emergency', 'resources'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); if (tab === 'emergency') { fetchEmergencyDocs(); setPacketGenerated(false); } }}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition ${activeTab === tab ? 'bg-white dark:bg-stone-700 shadow text-stone-900 dark:text-white' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'}`}
-            >
-              {tab === 'documents' ? t.myDocuments : tab === 'emergency' ? (
-                <span className="flex items-center space-x-1.5">
-                  <AlertTriangle size={14} className="text-red-500" />
-                  <span>{t.emergencyTab}</span>
-                </span>
-              ) : (
-                <span className="flex items-center space-x-1.5">
-                  <BookOpen size={14} className="text-blue-500" />
-                  <span>{lang === 'es' ? 'Recursos' : 'Resources'}</span>
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="overflow-x-auto -mx-4 px-4 mb-6">
+          <div className="flex space-x-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl w-fit min-w-full sm:min-w-0">
+            {['documents', 'emergency', 'resources'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); if (tab === 'emergency') { fetchEmergencyDocs(); setPacketGenerated(false); } }}
+                className={`flex-1 sm:flex-none whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition ${activeTab === tab ? 'bg-white dark:bg-stone-700 shadow text-stone-900 dark:text-white' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'}`}
+              >
+                {tab === 'documents' ? t.myDocuments : tab === 'emergency' ? (
+                  <span className="flex items-center space-x-1.5">
+                    <AlertTriangle size={14} className="text-red-500" />
+                    <span>{t.emergencyTab}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center space-x-1.5">
+                    <BookOpen size={14} className="text-blue-500" />
+                    <span>{lang === 'es' ? 'Recursos' : 'Resources'}</span>
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── Documents Tab ── */}
