@@ -18,6 +18,7 @@ import reminder_scheduler
 import models
 import schemas
 import security
+from reminder_scheduler import start_scheduler, start_self_ping
 from database import engine, get_db
 
 load_dotenv()
@@ -47,7 +48,9 @@ app.add_middleware(
 )
 
 
+start_self_ping("https://resourcebridge-v64j.onrender.com/api/health")
 # ─── Health ────────────────────────────────────────────────────────────────────
+
 
 @app.api_route("/api/health", methods=["GET", "HEAD"])
 def read_root():

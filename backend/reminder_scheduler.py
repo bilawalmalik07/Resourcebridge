@@ -3,6 +3,7 @@ Background scheduler: checks every 60 seconds for due reminders and sends email 
 """
 import threading
 import time
+import requests
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 import models
@@ -54,6 +55,20 @@ def start_scheduler():
         while True:
             _check_and_send()
             time.sleep(60)
+
+    t = threading.Thread(target=loop, daemon=True)
+    t.start()
+
+
+def start_self_ping(url: str):
+    def loop():
+        while True:
+            time.sleep(240)  # 4 minutes
+            try:
+                requests.get(url, timeout=10)
+                print("Self-ping OK")
+            except Exception as e:
+                print(f"Self-ping failed: {e}")
 
     t = threading.Thread(target=loop, daemon=True)
     t.start()
