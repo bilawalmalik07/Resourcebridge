@@ -34,6 +34,7 @@ Built for real people. Simple, secure, and accessible.
 - 🚨 **Emergency Packet** — Mark critical documents as emergency and generate a printable packet for your family
 - 📧 **Email Reminders** — Set date/time reminders and receive automated emails — never miss a deadline
 - ✅ **To-Do List** — Built-in task manager to track action items tied to your documents
+- 📚 **Resource Library** — Free bilingual Know Your Rights cards and preparedness checklists covering immigration, housing, employment, healthcare, and school enrollment — no login required
 - 🌍 **OCR & Text Extraction** — Extracts text from scanned documents, images, and PDFs
 
 ---
@@ -49,7 +50,7 @@ Built for real people. Simple, secure, and accessible.
 | Storage  | Cloudinary                                  |
 | Email    | Resend (custom domain: resourcebridge.tech) |
 | Hosting  | Render                                      |
-| Uptime   | UptimeRobot                                 |
+| Uptime   | UptimeRobot + self-ping scheduler           |
 
 ---
 
