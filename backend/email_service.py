@@ -61,7 +61,9 @@ def send_reminder_email(to_email: str, username: str, reminder_text: str, remind
         print("RESEND_API_KEY not set.")
         return False
 
-    formatted_time = remind_at.strftime("%B %d, %Y at %I:%M %p")
+    from zoneinfo import ZoneInfo
+    central = remind_at.astimezone(ZoneInfo("America/Chicago"))
+    formatted_time = central.strftime("%B %d, %Y at %I:%M %p %Z")
     html = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f8f7f4;border-radius:16px;">
       <div style="text-align:center;margin-bottom:24px;">
