@@ -61,7 +61,7 @@ Built for real people. Simple, Secure, and Accessible.
 
 ## Project Background
 
-ResourceBridge was built as part of a civic technology internship with the **Chicago Education Advocacy Cooperative (ChiEAC)** — a nonprofit serving immigrant and working-class families in Chicago. The platform was designed, developed, and deployed end-to-end by a single developer over 8 weeks.
+ResourceBridge was built as part of a civic technology-full stack project work with the **Chicago Education Advocacy Cooperative (ChiEAC)** — a nonprofit serving immigrant and working-class families in Chicago.
 
 ---
 
