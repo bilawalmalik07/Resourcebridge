@@ -6,6 +6,8 @@ ResourceBridge is a bilingual, AI-assisted web platform that helps immigrant and
 
 🔗 **Live:** [resourcebridge.tech](https://resourcebridge.tech)
 
+> Alternate URL [resourcebridge.tech](https://resourcebridge-v64j.onrender.com/)
+
 ## 🎥 Demo
 
 [Watch Demo Video](https://youtu.be/C0rWYa8_jdQ)
